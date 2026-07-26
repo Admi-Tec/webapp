@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2, XCircle, MinusCircle, Clock, Users } from "lucide-react";
 import { MathText, ChoiceText } from "@/lib/math-render";
 import { getExamResult } from "@/lib/exams.functions";
+import { exitExamFullscreen } from "@/lib/exam-fullscreen";
 import { groupQuestionsByTopic } from "@/lib/group-questions-by-topic";
 import { getExerciseImageUrl } from "@/lib/storage";
 import { ZoomableImage } from "@/components/zoomable-image";
@@ -53,6 +54,13 @@ function useCountUp(target: number, durationMs = 700) {
 function ResultPage() {
   const { sessionId } = Route.useParams();
   const navigate = useNavigate();
+
+  // Al llegar a resultados el examen ya terminó (envío manual o automático
+  // por tiempo/ausencia); no tiene sentido seguir en pantalla completa.
+  useEffect(() => {
+    exitExamFullscreen();
+  }, []);
+
   const fn = useServerFn(getExamResult);
   const statsFn = useServerFn(getExamStats);
   const q = useQuery({

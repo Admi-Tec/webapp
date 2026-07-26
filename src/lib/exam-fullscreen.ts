@@ -10,3 +10,10 @@ export function requestExamFullscreen() {
     el.requestFullscreen().catch(() => {});
   }
 }
+
+export function exitExamFullscreen() {
+  if (typeof document === "undefined") return;
+  if (document.fullscreenElement) {
+    document.exitFullscreen?.().catch(() => {});
+  }
+}

@@ -7,6 +7,8 @@ export interface QuestionGroup<T> {
 // preservando el índice global (posición real en question_ids) de cada una —
 // las preguntas pueden llegar mezcladas entre cursos (los simulacros siempre
 // las baraja; los exámenes estándar también si question_order es "random").
+// Los grupos se ordenan por la primera pregunta que aparece de cada curso,
+// para que el panel siga el mismo orden 1, 2, 3... que ve el estudiante.
 export function groupQuestionsByTopic<T extends { topic?: { name?: string | null } | null }>(
   questions: T[],
 ): QuestionGroup<T>[] {
@@ -18,5 +20,5 @@ export function groupQuestionsByTopic<T extends { topic?: { name?: string | null
   });
   return Array.from(map.entries())
     .map(([name, items]) => ({ name, items }))
-    .sort((a, b) => a.name.localeCompare(b.name, "es"));
+    .sort((a, b) => a.items[0].index - b.items[0].index);
 }

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query";
+import { queryOptions, useSuspenseQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState, useEffect } from "react";
 import {
@@ -68,6 +68,7 @@ function PerfilPage() {
     [fetchProfile],
   );
   const { data } = useSuspenseQuery(qo);
+  const queryClient = useQueryClient();
   const universitiesQ = useQuery({
     queryKey: ["all-universities"],
     queryFn: () => universitiesFn(),
@@ -76,7 +77,13 @@ function PerfilPage() {
   const allUniversities = universitiesQ.data ?? [];
   const allTopics = topicsQ.data ?? [];
 
-  const [universities, setUniversities] = useState<UniRow[]>([]);
+  const [universities, setUniversities] = useState<UniRow[]>(
+    (data?.universities ?? []).map((u: any) => ({
+      universityId: u.university_id,
+      examDate: u.exam_date ?? "",
+      careerId: u.career_id ?? null,
+    })),
+  );
   const universityIds = universities.map((u) => u.universityId);
   const careersQ = useQuery({
     queryKey: ["careers-for-universities", universityIds],
@@ -90,15 +97,20 @@ function PerfilPage() {
     careersByUniversity.set(c.university_id, list);
   });
 
-  const [fullName, setFullName] = useState("");
-  const [pseudonym, setPseudonym] = useState("");
-  const [leaderboardOptIn, setLeaderboardOptIn] = useState(true);
-  const [weeklyGoalQuestions, setWeeklyGoalQuestions] = useState<number | "">(50);
-  const [weeklyGoalExams, setWeeklyGoalExams] = useState<number | "">(2);
-  const [prepTime, setPrepTime] = useState<string | null>(null);
-  const [prepMethod, setPrepMethod] = useState<string | null>(null);
-  const [weeklyStudyHours, setWeeklyStudyHours] = useState<string>("");
-  const [weakTopicIds, setWeakTopicIds] = useState<string[]>([]);
+  const p0 = data?.profile;
+  const [fullName, setFullName] = useState(p0?.full_name ?? "");
+  const [pseudonym, setPseudonym] = useState(p0?.pseudonym ?? "");
+  const [leaderboardOptIn, setLeaderboardOptIn] = useState(p0?.leaderboard_opt_in ?? true);
+  const [weeklyGoalQuestions, setWeeklyGoalQuestions] = useState<number | "">(
+    p0?.weekly_goal_questions ?? 50,
+  );
+  const [weeklyGoalExams, setWeeklyGoalExams] = useState<number | "">(p0?.weekly_goal_exams ?? 2);
+  const [prepTime, setPrepTime] = useState<string | null>(p0?.prep_time ?? null);
+  const [prepMethod, setPrepMethod] = useState<string | null>(p0?.prep_method ?? null);
+  const [weeklyStudyHours, setWeeklyStudyHours] = useState<string>(
+    p0?.weekly_study_hours != null ? String(p0.weekly_study_hours) : "",
+  );
+  const [weakTopicIds, setWeakTopicIds] = useState<string[]>(p0?.initial_weak_topic_ids ?? []);
   const [busy, setBusy] = useState(false);
   const [saveFeedback, flashSaveFeedback] = useSaveFeedback();
 
@@ -165,26 +177,6 @@ function PerfilPage() {
     }
   }
 
-  useEffect(() => {
-    const p = data?.profile;
-    setFullName(p?.full_name ?? "");
-    setPseudonym(p?.pseudonym ?? "");
-    setLeaderboardOptIn(p?.leaderboard_opt_in ?? true);
-    setWeeklyGoalQuestions(p?.weekly_goal_questions ?? 50);
-    setWeeklyGoalExams(p?.weekly_goal_exams ?? 2);
-    setPrepTime(p?.prep_time ?? null);
-    setPrepMethod(p?.prep_method ?? null);
-    setWeeklyStudyHours(p?.weekly_study_hours != null ? String(p.weekly_study_hours) : "");
-    setWeakTopicIds(p?.initial_weak_topic_ids ?? []);
-    setUniversities(
-      (data?.universities ?? []).map((u: any) => ({
-        universityId: u.university_id,
-        examDate: u.exam_date ?? "",
-        careerId: u.career_id ?? null,
-      })),
-    );
-  }, [data]);
-
   function toggleWeakTopic(id: string) {
     setWeakTopicIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
   }
@@ -243,6 +235,7 @@ function PerfilPage() {
           })),
         },
       });
+      await queryClient.invalidateQueries({ queryKey: ["full-profile"] });
       toast.success("Perfil actualizado");
       flashSaveFeedback("accepted");
     } catch (err: any) {

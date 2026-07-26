@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PremiumLockChip, usePremiumGate } from "@/components/premium/premium-gate";
+import { InfoTooltip } from "@/components/info-tooltip";
 import {
   getTopicAccuracyDetail,
   getTopicFrequencyByUniversity,
@@ -42,6 +43,7 @@ const TREND_MIN_DELTA = 5;
 interface BasicTopicStat {
   slug: string;
   name: string;
+  color: string | null;
   total: number;
   correct: number;
   accuracy: number;
@@ -55,6 +57,7 @@ interface TargetUniversity {
 interface Bar_ {
   id: string;
   name: string;
+  color: string | null;
   total: number;
   correct: number;
   accuracy: number;
@@ -66,15 +69,18 @@ interface Bar_ {
 function aggregate(
   rows: TopicAccuracyRow[],
   trendRows: TopicAccuracyRow[],
-  keyOf: (r: TopicAccuracyRow) => { id: string; name: string } | null,
+  keyOf: (r: TopicAccuracyRow) => { id: string; name: string; color?: string | null } | null,
   avgMap: Record<string, number>,
   freqMap: Record<string, number> | null,
 ): Bar_[] {
-  const map = new Map<string, { name: string; total: number; correct: number }>();
+  const map = new Map<
+    string,
+    { name: string; color: string | null; total: number; correct: number }
+  >();
   rows.forEach((r) => {
     const k = keyOf(r);
     if (!k) return;
-    const cur = map.get(k.id) ?? { name: k.name, total: 0, correct: 0 };
+    const cur = map.get(k.id) ?? { name: k.name, color: k.color ?? null, total: 0, correct: 0 };
     cur.total += 1;
     if (r.isCorrect) cur.correct += 1;
     map.set(k.id, cur);
@@ -117,6 +123,7 @@ function aggregate(
     return {
       id,
       name: v.name,
+      color: v.color,
       total: v.total,
       correct: v.correct,
       accuracy: Math.round((v.correct / v.total) * 100),
@@ -296,6 +303,7 @@ export function TopicAccuracyChart({
       return basicTopicStats.map((t) => ({
         id: t.slug,
         name: t.name,
+        color: t.color,
         total: t.total,
         correct: t.correct,
         accuracy: t.accuracy,
@@ -307,7 +315,7 @@ export function TopicAccuracyChart({
     return aggregate(
       rowsInRange,
       rowsForTrend,
-      (r) => ({ id: r.topicId, name: r.topicName }),
+      (r) => ({ id: r.topicId, name: r.topicName, color: r.topicColor }),
       detailQ.data.topicAvgAccuracy,
       universityId !== "all" ? (freqQ.data?.topicFrequency ?? null) : null,
     );
@@ -371,7 +379,15 @@ export function TopicAccuracyChart({
   return (
     <section className="mt-10 rounded-xl border border-border bg-card p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-display text-xl font-bold">Aciertos por curso</h2>
+        <div className="flex items-center gap-1.5">
+          <h2 className="font-display text-xl font-bold">Aciertos por curso</h2>
+          <InfoTooltip>
+            Cada barra de color es tu % de aciertos en ese curso; la barra gris de al lado es el
+            promedio de todos los estudiantes, para que veas dónde estás mejor que el resto. Las
+            flechas ▲▼ indican si mejoraste o bajaste en los últimos 30 días. Haz click en una barra
+            para ver el detalle por subtema.
+          </InfoTooltip>
+        </div>
         {!isPremium && <PremiumLockChip />}
       </div>
 
@@ -485,7 +501,7 @@ export function TopicAccuracyChart({
                 {displayedBars.map((bar) => (
                   <Cell
                     key={bar.id}
-                    fill="var(--color-primary)"
+                    fill={bar.color || "var(--color-primary)"}
                     onClick={() => {
                       // El click siempre intenta abrir el gate premium
                       // (incluso sin datos enriquecidos todavía cargados) —

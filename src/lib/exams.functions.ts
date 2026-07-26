@@ -142,7 +142,10 @@ export const getExamPreview = createServerFn({ method: "GET" })
     const { data: rows } = await sb
       .from("exam_questions")
       .select("exercise:exercises(topic:topics(name))")
-      .eq("exam_id", data.id);
+      .eq("exam_id", data.id)
+      .order("position", { ascending: true });
+    // El Map conserva el orden de inserción, así que el primer curso en
+    // aparecer en `position` queda primero en el breakdown.
     const counts = new Map<string, number>();
     (rows ?? []).forEach((r: any) => {
       const name = r.exercise?.topic?.name ?? "Otros";

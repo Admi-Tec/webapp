@@ -10,6 +10,7 @@ export interface TopicAccuracyRow {
   topicId: string;
   topicSlug: string;
   topicName: string;
+  topicColor: string | null;
   subtopicId: string | null;
   subtopicName: string | null;
   contentType: "practice" | "template" | "standard";
@@ -66,7 +67,7 @@ export const getUserStats = createServerFn({ method: "GET" })
     const { data: attempts } = await supabase
       .from("attempts")
       .select(
-        "id, is_correct, created_at, exercise:exercises(id, statement_md, topic:topics(slug,name))",
+        "id, is_correct, created_at, exercise:exercises(id, statement_md, topic:topics(slug,name,color))",
       )
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
@@ -77,11 +78,19 @@ export const getUserStats = createServerFn({ method: "GET" })
     const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
 
     // by topic
-    const byTopic = new Map<string, { name: string; total: number; correct: number }>();
+    const byTopic = new Map<
+      string,
+      { name: string; color: string | null; total: number; correct: number }
+    >();
     rows.forEach((r: any) => {
       const t = r.exercise?.topic;
       if (!t) return;
-      const cur = byTopic.get(t.slug) ?? { name: t.name, total: 0, correct: 0 };
+      const cur = byTopic.get(t.slug) ?? {
+        name: t.name,
+        color: t.color ?? null,
+        total: 0,
+        correct: 0,
+      };
       cur.total += 1;
       if (r.is_correct) cur.correct += 1;
       byTopic.set(t.slug, cur);
@@ -89,6 +98,7 @@ export const getUserStats = createServerFn({ method: "GET" })
     const topicStats = Array.from(byTopic.entries()).map(([slug, v]) => ({
       slug,
       name: v.name,
+      color: v.color,
       total: v.total,
       correct: v.correct,
       accuracy: Math.round((v.correct / v.total) * 100),
@@ -141,7 +151,7 @@ export const getTopicAccuracyDetail = createServerFn({ method: "GET" })
         supabase
           .from("attempts")
           .select(
-            "id, is_correct, created_at, exam_session_id, exercise:exercises(topic:topics(id,slug,name), subtopic:subtopics(id,name))",
+            "id, is_correct, created_at, exam_session_id, exercise:exercises(topic:topics(id,slug,name,color), subtopic:subtopics(id,name))",
           )
           .eq("user_id", userId)
           .order("created_at", { ascending: false })
@@ -179,6 +189,7 @@ export const getTopicAccuracyDetail = createServerFn({ method: "GET" })
         topicId: r.exercise.topic.id as string,
         topicSlug: r.exercise.topic.slug as string,
         topicName: r.exercise.topic.name as string,
+        topicColor: (r.exercise.topic.color ?? null) as string | null,
         subtopicId: (r.exercise.subtopic?.id ?? null) as string | null,
         subtopicName: (r.exercise.subtopic?.name ?? null) as string | null,
         // Sin exam_session_id = práctica libre. Con exam_session_id pero sin
