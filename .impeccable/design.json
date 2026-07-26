@@ -1,0 +1,235 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-11T00:00:00Z",
+  "title": "Design System: Admi-Tec",
+  "extensions": {
+    "colorMeta": {
+      "at-primary": {
+        "role": "primary",
+        "displayName": "Amber Pencil Mark",
+        "canonical": "oklch(0.83 0.16 92)",
+        "tonalRamp": [
+          "oklch(0.20 0.06 92)",
+          "oklch(0.32 0.09 92)",
+          "oklch(0.45 0.12 92)",
+          "oklch(0.58 0.14 92)",
+          "oklch(0.70 0.16 92)",
+          "oklch(0.83 0.16 92)",
+          "oklch(0.90 0.11 92)",
+          "oklch(0.96 0.05 92)"
+        ]
+      },
+      "at-background": {
+        "role": "neutral",
+        "displayName": "Papel Nocturno",
+        "canonical": "oklch(0.20 0.045 258)",
+        "tonalRamp": [
+          "oklch(0.10 0.03 258)",
+          "oklch(0.16 0.04 258)",
+          "oklch(0.20 0.045 258)",
+          "oklch(0.26 0.055 258)",
+          "oklch(0.35 0.05 258)",
+          "oklch(0.50 0.04 258)",
+          "oklch(0.70 0.03 258)",
+          "oklch(0.90 0.015 258)"
+        ]
+      },
+      "at-card": {
+        "role": "neutral",
+        "displayName": "Panel Elevado",
+        "canonical": "oklch(0.26 0.055 258)"
+      },
+      "at-foreground": {
+        "role": "neutral",
+        "displayName": "Tinta Clara",
+        "canonical": "oklch(0.97 0.014 85)"
+      },
+      "at-muted-foreground": {
+        "role": "neutral",
+        "displayName": "Tinta Apagada",
+        "canonical": "oklch(0.68 0.03 250)"
+      },
+      "at-border": {
+        "role": "neutral",
+        "displayName": "Borde Fantasma",
+        "canonical": "oklch(1 0 0 / 13%)"
+      },
+      "at-success": {
+        "role": "success",
+        "displayName": "Verde Correcto",
+        "canonical": "oklch(0.74 0.11 190)"
+      },
+      "at-destructive": {
+        "role": "destructive",
+        "displayName": "Rojo de Alerta",
+        "canonical": "oklch(0.65 0.2 27)"
+      },
+      "app-paper": {
+        "role": "neutral",
+        "displayName": "Papel de Cuaderno (Product Surface)",
+        "canonical": "oklch(0.985 0.008 85)"
+      },
+      "app-primary": {
+        "role": "primary",
+        "displayName": "Azul Academia Profundo (Product Surface)",
+        "canonical": "oklch(0.34 0.13 265)"
+      },
+      "app-highlighter": {
+        "role": "accent",
+        "displayName": "Ámbar Resaltador (Product Surface)",
+        "canonical": "oklch(0.78 0.165 70)"
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Hero claim only, public site." },
+      "headline": { "displayName": "Headline", "purpose": "Public-site section headings." },
+      "body": { "displayName": "Body", "purpose": "Public-site paragraph copy." },
+      "label": { "displayName": "Label", "purpose": "Stat labels, table column headers." },
+      "data": {
+        "displayName": "Data",
+        "purpose": "Timers, scores, ranks — any measured, tabular figure."
+      },
+      "app-display": {
+        "displayName": "Product Display",
+        "purpose": "Authenticated app headings only (Fraunces)."
+      },
+      "app-body": {
+        "displayName": "Product Body",
+        "purpose": "Authenticated app body/UI copy only (Inter)."
+      }
+    },
+    "shadows": [
+      {
+        "name": "ghost-ring",
+        "value": "0 0 0 1px rgba(0,0,0,0.2)",
+        "purpose": "Hairline definition ring on the hero AnswerSheetWidget card only."
+      }
+    ],
+    "motion": [
+      {
+        "name": "at-glow",
+        "value": "5s ease-in-out infinite, opacity 0.35 to 0.6",
+        "purpose": "Ambient amber glow behind the hero widget — the page's one bold live-signal."
+      },
+      {
+        "name": "at-marquee",
+        "value": "34s linear infinite, translateX(0) to translateX(-50%)",
+        "purpose": "Continuous university-name strip; pauses on hover/focus."
+      },
+      {
+        "name": "at-reveal-row",
+        "value": "260ms cubic-bezier(0.16,1,0.3,1), fade + translateX(-6px to 0)",
+        "purpose": "Staggered reveal of the answer-sheet widget's option rows."
+      },
+      {
+        "name": "press",
+        "value": "100ms cubic-bezier(0.25,1,0.5,1), scale to 0.97 on :active",
+        "purpose": "Tactile feedback on every button/pill, shared across both surfaces."
+      }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Amber-filled CTA button used for the main asks (Empezar a practicar, Crear cuenta gratis).",
+      "html": "<button class=\"ds-btn-primary\">Crear cuenta gratis</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 32px; border-radius: 8px; background: oklch(0.83 0.16 92); color: oklch(0.20 0.045 258); font-family: 'Public Sans', ui-sans-serif, system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; border: none; cursor: pointer; transition: transform 100ms cubic-bezier(0.25,1,0.5,1), background-color 150ms ease; } .ds-btn-primary:hover { background: oklch(0.83 0.16 92 / 0.9); } .ds-btn-primary:active { transform: scale(0.97); } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 1px oklch(0.83 0.16 92); }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Secondary ask button (Ver exámenes oficiales, Ver ranking completo).",
+      "html": "<button class=\"ds-btn-outline\">Ver ranking completo</button>",
+      "css": ".ds-btn-outline { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 32px; border-radius: 8px; background: oklch(0.20 0.045 258); color: oklch(0.97 0.014 85); border: 1px solid oklch(1 0 0 / 13%); font-family: 'Public Sans', ui-sans-serif, system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: transform 100ms cubic-bezier(0.25,1,0.5,1), background-color 150ms ease; } .ds-btn-outline:hover { background: oklch(0.26 0.055 258); } .ds-btn-outline:active { transform: scale(0.97); }"
+    },
+    {
+      "name": "Trust Pill",
+      "kind": "chip",
+      "refersTo": "trust-pill",
+      "description": "Calm reassurance chip near the hero and final CTA (e.g. 'Gratis para crear tu cuenta, sin tarjeta').",
+      "html": "<span class=\"ds-trust-pill\"><span class=\"ds-trust-dot\"></span>Gratis para crear tu cuenta, sin tarjeta</span>",
+      "css": ".ds-trust-pill { display: inline-flex; align-items: center; gap: 8px; border-radius: 9999px; border: 1px solid oklch(0.74 0.11 190 / 0.3); background: oklch(0.74 0.11 190 / 0.1); padding: 6px 16px; font-family: 'Public Sans', ui-sans-serif, system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; color: oklch(0.74 0.11 190); } .ds-trust-dot { width: 6px; height: 6px; border-radius: 9999px; background: oklch(0.74 0.11 190); flex-shrink: 0; }"
+    },
+    {
+      "name": "Letter Badge",
+      "kind": "custom",
+      "refersTo": "letter-badge",
+      "description": "Rounded mono letter badge (A/B/C/D) enumerating feature cards and answer-sheet options.",
+      "html": "<span class=\"ds-letter-badge\">A</span>",
+      "css": ".ds-letter-badge { display: grid; place-items: center; width: 40px; height: 40px; flex-shrink: 0; border-radius: 9999px; border: 1px solid oklch(0.83 0.16 92 / 0.4); font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 1rem; font-weight: 700; color: oklch(0.83 0.16 92); font-variant-numeric: tabular-nums; }"
+    },
+    {
+      "name": "Feature Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Bordered flat card pairing a letter badge with a title and description, used for the A/B/C/D feature grid.",
+      "html": "<div class=\"ds-card\"><span class=\"ds-letter-badge\">A</span><div><h3 class=\"ds-card-title\">Exámenes oficiales</h3><p class=\"ds-card-text\">Preguntas reales de procesos de admisión anteriores, ordenadas por universidad y año exacto.</p></div></div>",
+      "css": ".ds-card { display: flex; gap: 16px; border-radius: 8px; border: 1px solid oklch(1 0 0 / 13%); background: oklch(0.26 0.055 258); padding: 24px; } .ds-card-title { font-family: 'Bricolage Grotesque', ui-sans-serif, sans-serif; font-size: 1.125rem; font-weight: 700; letter-spacing: -0.02em; color: oklch(0.97 0.014 85); } .ds-card-text { margin-top: 8px; font-family: 'Public Sans', ui-sans-serif, sans-serif; font-size: 0.875rem; color: oklch(0.68 0.03 250); }"
+    },
+    {
+      "name": "Ranking Row",
+      "kind": "custom",
+      "refersTo": "ranking-table",
+      "description": "A ranking-table row; the viewer's own row (last example) breaks pattern with amber tint and top border.",
+      "html": "<ul class=\"ds-ranking\"><li class=\"ds-ranking-row\"><span class=\"ds-ranking-rank\">1</span><span class=\"ds-ranking-handle\">Vector_123</span><span class=\"ds-ranking-score\">96%</span></li><li class=\"ds-ranking-row ds-ranking-row--you\"><span class=\"ds-ranking-rank\">27</span><span class=\"ds-ranking-handle\">Tú</span><span class=\"ds-ranking-score\">81%</span></li></ul>",
+      "css": ".ds-ranking { list-style: none; margin: 0; padding: 0; } .ds-ranking-row { display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-bottom: 1px solid oklch(1 0 0 / 13%); font-family: 'Public Sans', ui-sans-serif, sans-serif; font-size: 0.875rem; } .ds-ranking-rank, .ds-ranking-score { font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; color: oklch(0.68 0.03 250); } .ds-ranking-handle { flex: 1; font-weight: 500; color: oklch(0.97 0.014 85); } .ds-ranking-row--you { background: oklch(0.83 0.16 92 / 0.05); border-top: 1px solid oklch(0.83 0.16 92 / 0.3); border-bottom: none; } .ds-ranking-row--you .ds-ranking-rank, .ds-ranking-row--you .ds-ranking-handle, .ds-ranking-row--you .ds-ranking-score { color: oklch(0.83 0.16 92); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "La Hoja de Respuestas (The Answer Sheet)",
+    "overview": "Admi-Tec's public site is built as a real exam answer sheet, at night, mid-exam: ink-navy paper under exam-room light, a mechanical-pencil amber for every mark that matters, tabular data that reads like an actual scoring column rather than marketing copy. Where the old \"study notebook\" register was calm and academic, this one is closer to the room where the exam is actually happening — timers genuinely ticking, a live ranking, the specific tension of \"this is real, and it's timed.\" It explicitly rejects the celebratory, badge-and-confetti register that habit-tracking apps default to: the ranking and streak mechanics stay dressed as instrumentation (a scoreboard, a stopwatch), never as a game layer.",
+    "keyCharacteristics": [
+      "Dark ink-navy canvas, one amber-gold primary, one teal 'correct' accent — never a second decorative hue.",
+      "Bricolage Grotesque against Public Sans — a weight contrast, not two similar geometrics.",
+      "JetBrains Mono + tabular figures for every number that is actually being measured.",
+      "Flat cards, whisper borders, ambient (never bouncy) motion; the hero widget's amber glow is the one exception.",
+      "No confetti, no cartoon badges, no mascots.",
+      "A second, calmer 'study notebook' system runs the authenticated product surfaces."
+    ],
+    "rules": [
+      {
+        "name": "The One Pencil Rule",
+        "body": "Amber (at-primary) is the only warm, saturated color on the public site. It marks exactly one thing per view — never a fill covering a whole section.",
+        "section": "colors"
+      },
+      {
+        "name": "The Product Surface Rule",
+        "body": "The authenticated app after signup runs its own warm, light 'notebook' theme (app-paper, app-ink, app-primary, app-highlighter). The two systems never mix on the same screen; the boundary is the signup wall.",
+        "section": "colors"
+      },
+      {
+        "name": "The Measured-Figure Rule",
+        "body": "If a number changes at runtime or represents a real measurement, it is JetBrains Mono with tabular figures. If it's static marketing copy, it isn't.",
+        "section": "typography"
+      },
+      {
+        "name": "The One Glow Rule",
+        "body": "The ambient amber glow appears exactly once, on the hero's answer-sheet widget. Every other card, table, and section stays flat with a border only.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do keep Amber Pencil Mark as the public site's only warm, saturated color.",
+      "Do set every measured figure in JetBrains Mono with tabular figures.",
+      "Do keep the ambient glow to the hero AnswerSheetWidget only.",
+      "Do keep the ranking and countdown mechanics reading as real instrumentation.",
+      "Do keep the public and product palettes strictly separated by the signup wall.",
+      "Do provide a prefers-reduced-motion fallback for every public-site animation."
+    ],
+    "donts": [
+      "Don't introduce a second saturated accent hue on the public site.",
+      "Don't add confetti, cartoon badges, mascots, or bouncy/elastic motion anywhere.",
+      "Don't use border-left/border-right accent stripes on cards or list rows.",
+      "Don't use gradient text or background-clip: text.",
+      "Don't darken or enlarge shadows on hover/active.",
+      "Don't set Fraunces below ~18px on the product surface, and don't let Bricolage Grotesque leak into the authenticated app."
+    ]
+  }
+}
