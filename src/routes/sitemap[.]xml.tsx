@@ -9,13 +9,13 @@ function publicClient() {
   });
 }
 
-type UrlEntry = { loc: string; changefreq: string; priority: string };
+type UrlEntry = { loc: string; changefreq: string; priority: string; lastmod?: string };
 
 function toXml(urls: UrlEntry[]): string {
   const body = urls
     .map(
       (u) =>
-        `  <url><loc>${u.loc}</loc><changefreq>${u.changefreq}</changefreq><priority>${u.priority}</priority></url>`,
+        `  <url><loc>${u.loc}</loc>${u.lastmod ? `<lastmod>${u.lastmod}</lastmod>` : ""}<changefreq>${u.changefreq}</changefreq><priority>${u.priority}</priority></url>`,
     )
     .join("\n");
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${body}\n</urlset>\n`;
@@ -29,7 +29,7 @@ async function buildSitemap(): Promise<string> {
       sb.from("topics").select("slug").eq("active", true),
       sb.from("subtopics").select("slug, topic:topics!inner(slug)"),
       sb.from("universities").select("slug").eq("active", true),
-      sb.from("exercises").select("id"),
+      sb.from("exercises").select("id, created_at"),
     ]);
 
   const urls: UrlEntry[] = [
@@ -56,7 +56,12 @@ async function buildSitemap(): Promise<string> {
     urls.push({ loc: absoluteUrl(`/examenes/${u.slug}`), changefreq: "weekly", priority: "0.7" });
   }
   for (const e of exercises ?? []) {
-    urls.push({ loc: absoluteUrl(`/ejercicio/${e.id}`), changefreq: "monthly", priority: "0.5" });
+    urls.push({
+      loc: absoluteUrl(`/ejercicio/${e.id}`),
+      changefreq: "monthly",
+      priority: "0.5",
+      lastmod: e.created_at ? e.created_at.slice(0, 10) : undefined,
+    });
   }
 
   return toXml(urls);

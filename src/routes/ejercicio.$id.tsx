@@ -8,20 +8,15 @@ import { MathText, ChoiceText } from "@/lib/math-render";
 import { getExerciseImageUrl } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import { CheckCircle2, XCircle, ArrowLeft, ArrowRight } from "lucide-react";
+import { CheckCircle2, XCircle, ArrowLeft, ArrowRight, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ExerciseRating } from "@/components/exercise-rating";
 import { ReportProblemDialog } from "@/components/report-problem-dialog";
 import { ZoomableImage } from "@/components/zoomable-image";
 import { ExercisePagePending } from "@/components/skeletons";
-import { pageMeta } from "@/lib/site";
+import { pageMeta, absoluteUrl } from "@/lib/site";
+import { JsonLd } from "@/components/json-ld";
 
 const exQO = (id: string) =>
   queryOptions({ queryKey: ["exercise", id], queryFn: () => getExercise({ data: { id } }) });
@@ -37,12 +32,18 @@ export const Route = createFileRoute("/ejercicio/$id")({
   head: ({ params, loaderData }) => {
     const ex = loaderData?.exercise;
     const topicName = ex?.topic?.name;
+    // Subtopic (not topic) drives the title/description — topic alone produces
+    // duplicate <title>s across every exercise sharing a topic+university pair
+    // (SEO audit 2026-07-30: hundreds of /ejercicio pages shipped an identical
+    // title). Subtopic is far more granular, so it collapses far fewer pages
+    // into the same title.
+    const subtopicName = ex?.subtopic?.name ?? topicName;
     const uniName = ex?.university?.short_name;
-    const title = topicName
-      ? `Ejercicio de ${topicName}${uniName ? ` — ${uniName}` : ""}`
+    const title = subtopicName
+      ? `Ejercicio de ${subtopicName}${uniName ? ` — ${uniName}` : ""}`
       : "Ejercicio de práctica";
-    const description = topicName
-      ? `Ejercicio de ${topicName}${uniName ? ` (${uniName})` : ""} resuelto paso a paso${ex?.difficulty ? `. Dificultad: ${difficultyLabel[ex.difficulty]}` : ""}.`
+    const description = subtopicName
+      ? `Ejercicio de ${subtopicName}${topicName && topicName !== subtopicName ? ` (${topicName})` : ""}${uniName ? ` — ${uniName}` : ""} resuelto paso a paso${ex?.difficulty ? `. Dificultad: ${difficultyLabel[ex.difficulty]}` : ""}.`
       : "Ejercicio resuelto paso a paso para tu examen de admisión.";
     return pageMeta({ path: `/ejercicio/${params.id}`, title, description });
   },
@@ -142,6 +143,36 @@ function ExercisePage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
+      {ex.topic && (
+        <JsonLd
+          data={{
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              { "@type": "ListItem", position: 1, name: "Cursos", item: absoluteUrl("/temas") },
+              {
+                "@type": "ListItem",
+                position: 2,
+                name: ex.topic.name,
+                item: absoluteUrl(`/temas/${ex.topic.slug}`),
+              },
+            ],
+          }}
+        />
+      )}
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "Question",
+          name: ex.statement_md,
+          text: ex.statement_md,
+          answerCount: choices.length,
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: ex.solution_md,
+          },
+        }}
+      />
       <nav className="text-xs text-muted-foreground">
         {ex.topic && (
           <>
@@ -245,16 +276,20 @@ function ExercisePage() {
           </div>
         )}
 
-        <Accordion type="single" collapsible className="mt-6">
-          <AccordionItem value="sol">
-            <AccordionTrigger>Ver solución paso a paso</AccordionTrigger>
-            <AccordionContent>
-              <div className="rounded-lg bg-secondary/40 p-4 text-sm">
-                <MathText text={ex.solution_md} />
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
+        {/* <details> en vez del Accordion de Radix: Radix desmonta el
+            contenido cerrado del DOM (no queda ni el texto para un crawler),
+            mientras que <details>/<summary> deja la solución siempre presente
+            en el HTML — Google la indexa aunque esté colapsada — y el navegador
+            maneja el colapso nativamente, sin JS. */}
+        <details className="group mt-6 border-t border-border pt-2">
+          <summary className="flex cursor-pointer list-none items-center justify-between py-4 text-sm font-medium transition-colors hover:text-primary [&::-webkit-details-marker]:hidden">
+            Ver solución paso a paso
+            <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 group-open:rotate-180" />
+          </summary>
+          <div className="rounded-lg bg-secondary/40 p-4 text-sm">
+            <MathText text={ex.solution_md} />
+          </div>
+        </details>
 
         {submitted && (
           <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-4">

@@ -15,6 +15,7 @@ export const Route = createFileRoute("/auth")({
       path: "/auth",
       title: "Ingresar o crear cuenta",
       description: "Crea tu cuenta gratis en Admi-Tec o ingresa para guardar tu progreso.",
+      noindex: true,
     }),
   component: AuthPage,
 });
