@@ -36,5 +36,26 @@ export default tseslint.config(
       "@typescript-eslint/no-unused-vars": "off",
     },
   },
+  /*
+    The `react-refresh/only-export-components` warnings in `shadcn/ui` are intentional.
+    These components follow the upstream shadcn pattern of exporting both the component
+    and its `*Variants` helper. Refactoring them would diverge from upstream and make 
+    future `shadcn` updates more difficult.
+  */
+  {
+    files: [
+      "src/components/premium/premium-gate.tsx",
+      "src/components/report-problem-dialog.tsx",
+      "src/components/ui/badge.tsx",
+      "src/components/ui/button.tsx",
+      "src/components/ui/form.tsx",
+      "src/components/ui/navigation-menu.tsx",
+      "src/components/ui/sidebar.tsx",
+      "src/components/ui/toggle.tsx",
+    ],
+    rules: {
+      "react-refresh/only-export-components": "off",
+    },
+  },
   eslintPluginPrettier,
 );
