@@ -4,7 +4,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -13,7 +12,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Timer, Flag, CheckCircle2, Loader2, ShieldAlert } from "lucide-react";
-import { MathText, ChoiceText } from "@/lib/math-render";
 import {
   getExamSession,
   saveExamAnswers,
@@ -21,8 +19,7 @@ import {
   getExamResult,
 } from "@/lib/exams.functions";
 import { getExerciseImageUrl } from "@/lib/storage";
-import { FavoriteButton } from "@/components/favorite-button";
-import { ZoomableImage } from "@/components/zoomable-image";
+import { ExamQuestionCard } from "@/components/exam-question-card";
 import { useExamAwayGuard } from "@/hooks/use-exam-away-guard";
 import { groupQuestionsByTopic } from "@/lib/group-questions-by-topic";
 import { pageMeta } from "@/lib/site";
@@ -287,53 +284,15 @@ function TakeExam() {
             />
           </div>
 
-          <div
-            key={ex.id}
-            className="animate-card-swap mt-5 rounded-xl border border-border bg-card p-6"
-          >
-            <div className="mb-3 flex items-center justify-between">
-              {ex.topic?.name && <Badge variant="secondary">{ex.topic.name}</Badge>}
-              <div className="flex items-center gap-1">
-                <FavoriteButton exerciseId={ex.id} />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={toggleFlag}
-                  className={flagged.has(ex.id) ? "text-warning" : ""}
-                >
-                  <span
-                    key={flagged.has(ex.id) ? "flagged" : "unflagged"}
-                    className="animate-icon-pop mr-1 inline-flex"
-                  >
-                    <Flag className="h-4 w-4" />
-                  </span>
-                  {flagged.has(ex.id) ? "Desmarcar" : "Marcar"}
-                </Button>
-              </div>
-            </div>
-            <MathText text={ex.statement_md} />
-            {imgUrls[ex.id] && <ZoomableImage src={imgUrls[ex.id]} alt="Enunciado" />}
-            <ul className="mt-5 space-y-2">
-              {(ex.choices as string[]).map((c, i) => {
-                const picked = answers[ex.id] === i;
-                return (
-                  <li key={i}>
-                    <button
-                      type="button"
-                      disabled={timeUp}
-                      onClick={() => pick(i)}
-                      className={`press w-full rounded-lg border px-4 py-3 text-left text-sm transition ${picked ? "border-primary bg-primary/10 font-medium" : "border-border bg-background hover:border-primary/40"}`}
-                    >
-                      <span className="mr-2 font-semibold text-primary">
-                        {String.fromCharCode(65 + i)}.
-                      </span>
-                      <ChoiceText text={c} />
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
+          <ExamQuestionCard
+            exercise={{ ...ex, choices: ex.choices as string[] }}
+            selectedIndex={answers[ex.id]}
+            flagged={flagged.has(ex.id)}
+            disabled={timeUp}
+            imageUrl={imgUrls[ex.id]}
+            onSelect={pick}
+            onToggleFlag={toggleFlag}
+          />
 
           <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
             <Button

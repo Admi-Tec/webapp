@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 import type { Database, Tables } from "@/integrations/supabase/types";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { computeExamScore, FALLBACK_SCORING } from "@/lib/exam-scoring";
+import { defaultShuffle, pickTemplateQuestions } from "@/lib/simulacro-question-picker";
 import { z } from "zod";
 
 type ExamListRow = Pick<
@@ -426,18 +428,10 @@ export const startExamSession = createServerFn({ method: "POST" })
             `No hay suficientes preguntas de ${topicName} para generar este simulacro.`,
           );
         }
-        const unseen = ids.filter((id) => !seen.has(id));
-        const alreadySeen = ids.filter((id) => seen.has(id));
-        const shuffle = <T>(arr: T[]) => [...arr].sort(() => Math.random() - 0.5);
-        const picked: string[] = [];
-        picked.push(...shuffle(unseen).slice(0, rule.question_count));
-        if (picked.length < rule.question_count) {
-          picked.push(...shuffle(alreadySeen).slice(0, rule.question_count - picked.length));
-        }
-        questionIds.push(...picked);
+        questionIds.push(...pickTemplateQuestions(ids, seen, rule.question_count));
       }
       // template exams always shuffle across all rules
-      questionIds = questionIds.sort(() => Math.random() - 0.5);
+      questionIds = defaultShuffle(questionIds);
     } else {
       const { data: eqs, error: eqErr } = await supabase
         .from("exam_questions")
@@ -450,7 +444,7 @@ export const startExamSession = createServerFn({ method: "POST" })
       );
       if (questionIds.length === 0) throw new Error("El examen no tiene preguntas.");
       if (exam.question_order === "random") {
-        questionIds = [...questionIds].sort(() => Math.random() - 0.5);
+        questionIds = defaultShuffle(questionIds);
       }
     }
 
@@ -496,7 +490,7 @@ export const startRandomExamSession = createServerFn({ method: "POST" })
     if (ids.length === 0)
       throw new Error("No hay ejercicios disponibles para generar el simulacro.");
 
-    const questionIds = [...ids].sort(() => Math.random() - 0.5);
+    const questionIds = defaultShuffle(ids);
     const timeLimitMin = Math.max(1, Math.ceil((questionIds.length * 90) / 60));
 
     const { data: row, error } = await supabase
@@ -568,26 +562,6 @@ export const saveExamAnswers = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
-
-// Points-per-question scoring (see plan-sistema-puntajes.md). The three point
-// values are always parameters, never hardcoded here — they come from the
-// specific exam/template's own points_correct/incorrect/empty config (or, for
-// the rare exam_id-less session, the app-wide default config). This is the
-// only formula in the codebase that turns a correct/incorrect/empty count
-// into a score; the result is clamped to 0 (a student's score is never shown
-// as negative, even though the raw formula can go below zero internally).
-const FALLBACK_SCORING = { correct: 1, incorrect: -1, empty: 0 };
-
-function computeExamScore(
-  counts: { correct: number; incorrect: number; empty: number },
-  points: { correct: number; incorrect: number; empty: number },
-): number {
-  const raw =
-    counts.correct * points.correct +
-    counts.incorrect * points.incorrect +
-    counts.empty * points.empty;
-  return Math.max(0, raw);
-}
 
 export const submitExamSession = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

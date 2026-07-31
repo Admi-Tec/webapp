@@ -2,69 +2,14 @@ import { createServerFn } from "@tanstack/react-start";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { toPlanStatus, type PlanStatus } from "@/lib/plan-status";
+
+export type { PlanStatus };
 
 function publicClient() {
   return createClient<Database>(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
     auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
   });
-}
-
-export type PlanStatus = {
-  planType: "free" | "premium";
-  trialUsed: boolean;
-  trialEndsAt: string | null;
-  isPremium: boolean;
-  /** Premium temporal por prueba gratuita (trial_ends_at seteado y vigente). */
-  onTrial: boolean;
-  /** Días restantes de la prueba (redondeado hacia arriba), null si no hay prueba activa. */
-  trialDaysLeft: number | null;
-  /** Modo beta global (ver app_config.beta_mode) — da acceso Premium a todos sin tocar planType. */
-  betaActive: boolean;
-  betaEndsAt: string | null;
-  /** Días restantes de la beta, null si la beta no está activa o no tiene fecha de fin. */
-  betaDaysLeft: number | null;
-};
-
-function toStatus(raw: unknown): PlanStatus {
-  const r = (raw ?? {}) as {
-    plan_type?: string;
-    trial_used?: boolean;
-    trial_ends_at?: string;
-    beta_mode?: boolean;
-    beta_ends_at?: string | null;
-  };
-  const planType = r.plan_type === "premium" ? "premium" : "free";
-  const trialEndsAt = r.trial_ends_at ?? null;
-  // onTrial/trialDaysLeft reflejan solo la prueba gratuita REAL — nunca la
-  // beta, que se calcula aparte (betaActive/betaDaysLeft) para que planes.tsx
-  // pueda distinguir "premium por trial/pago real" de "premium solo por la
-  // beta" y mostrarle a cada quien el mensaje correcto.
-  const onTrial = planType === "premium" && trialEndsAt !== null;
-  const trialDaysLeft = onTrial
-    ? Math.max(0, Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / 86400000))
-    : null;
-
-  const betaActive = r.beta_mode === true;
-  const betaEndsAt = r.beta_ends_at ?? null;
-  const betaDaysLeft =
-    betaActive && betaEndsAt !== null
-      ? Math.max(0, Math.ceil((new Date(betaEndsAt).getTime() - Date.now()) / 86400000))
-      : null;
-
-  return {
-    planType,
-    trialUsed: r.trial_used === true,
-    trialEndsAt,
-    // Único lugar donde se combinan ambas fuentes: todo el resto de la app
-    // (PremiumOverlay, assertPremium, PlanBadge, locks) solo necesita mirar
-    // isPremium y automáticamente respeta la beta sin cambios propios.
-    isPremium: planType === "premium" || betaActive,
-    onTrial,
-    trialDaysLeft,
-    betaActive,
-    betaEndsAt,
-    betaDaysLeft,
-  };
 }
 
 // Cuerpo compartido de getPlanStatus, extraído para que assertPremium
@@ -78,7 +23,7 @@ export async function getPlanStatusRaw(context: {
   const { supabase, userId } = context;
   const { data, error } = await supabase.rpc("get_plan_status");
   if (error) throw new Error(error.message);
-  const status = toStatus(data);
+  const status = toPlanStatus(data);
 
   if (status.onTrial && status.trialDaysLeft !== null && status.trialDaysLeft <= 2) {
     const { data: existing } = await supabase
@@ -146,7 +91,7 @@ export const activatePremiumTrial = createServerFn({ method: "POST" })
       }
       throw new Error(error.message);
     }
-    return toStatus(data);
+    return toPlanStatus(data);
   });
 
 // Estado público de la beta (sin sesión) — a diferencia de getPlanStatus,

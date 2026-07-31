@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { pageMeta } from "@/lib/site";
+import { isValidEmailFormat, translateAuthError } from "@/lib/auth-error-messages";
 
 export const Route = createFileRoute("/auth")({
   head: () =>
@@ -43,57 +44,6 @@ function GoogleLogo({ className }: { className?: string }) {
   );
 }
 
-function translateAuthError(err: unknown): string {
-  const e = err as { code?: string; error_code?: string; message?: string } | null | undefined;
-  const code: string | undefined = e?.code ?? e?.error_code;
-  const msg: string = e?.message ?? "";
-  const m = msg.toLowerCase();
-
-  if (
-    code === "weak_password" ||
-    (m.includes("password") &&
-      (m.includes("weak") ||
-        m.includes("pwned") ||
-        m.includes("leaked") ||
-        m.includes("compromised")))
-  ) {
-    return "Esa contraseña es insegura o ha aparecido en filtraciones. Elige una más fuerte (mínimo 8 caracteres, mezcla letras, números y símbolos).";
-  }
-  if (code === "identity_already_exists") {
-    return "Esa cuenta de Google ya está vinculada a otro usuario.";
-  }
-  if (
-    code === "email_exists" ||
-    m.includes("identity is already linked") ||
-    (m.includes("identity") && m.includes("already"))
-  ) {
-    return "Ese correo ya tiene una cuenta. Si te registraste con contraseña, ingresa con ese método primero (o confirma tu correo si aún no lo hiciste) para poder vincular Google.";
-  }
-  if (
-    code === "user_already_exists" ||
-    m.includes("already registered") ||
-    m.includes("already exists")
-  ) {
-    return "Ya existe una cuenta con ese correo. Intenta ingresar.";
-  }
-  if (code === "email_address_invalid" || m.includes("invalid email")) {
-    return "El correo no tiene un formato válido.";
-  }
-  if (code === "over_email_send_rate_limit" || m.includes("rate limit")) {
-    return "Demasiados intentos. Espera unos minutos e inténtalo de nuevo.";
-  }
-  if (code === "signup_disabled") {
-    return "El registro está deshabilitado temporalmente.";
-  }
-  if (code === "invalid_credentials" || m.includes("invalid login credentials")) {
-    return "Correo o contraseña incorrectos.";
-  }
-  if (m.includes("password should be at least")) {
-    return "La contraseña es demasiado corta. Usa al menos 8 caracteres.";
-  }
-  return msg || "Algo salió mal. Inténtalo de nuevo.";
-}
-
 function AuthPage() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<"auth" | "forgot">("auth");
@@ -124,7 +74,7 @@ function AuthPage() {
     setPendingAction("form");
     setFormError(null);
     setInfo(null);
-    if (!/^\S+@\S+\.\S+$/.test(email)) {
+    if (!isValidEmailFormat(email)) {
       setFormError("Ingresa un correo válido.");
       setBusy(false);
       setPendingAction(null);

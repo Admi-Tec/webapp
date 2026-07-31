@@ -57,5 +57,15 @@ export default tseslint.config(
       "react-refresh/only-export-components": "off",
     },
   },
+  // src/test/**: test utilities, never processed by Fast Refresh, so a file
+  // exporting a helper function alongside a component (or re-exporting a
+  // whole library like @testing-library/react) is not the problem this rule
+  // targets.
+  {
+    files: ["src/test/**/*.{ts,tsx}"],
+    rules: {
+      "react-refresh/only-export-components": "off",
+    },
+  },
   eslintPluginPrettier,
 );

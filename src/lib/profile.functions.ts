@@ -1,5 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import {
+  containsBlockedWord,
+  PSEUDONYM_FORMAT_REGEX,
+  PSEUDONYM_MAX_LENGTH,
+  PSEUDONYM_MIN_LENGTH,
+} from "@/lib/pseudonym";
 import { z } from "zod";
 
 export const getFullProfile = createServerFn({ method: "GET" })
@@ -42,62 +48,6 @@ export const listAllUniversities = createServerFn({ method: "GET" })
     return data ?? [];
   });
 
-// Blocked words for pseudonyms: covers common Spanish/English vulgarity and slurs.
-// Checked server-side (in addition to the format regex) so it can't be bypassed from the client.
-const PSEUDONYM_BLOCKLIST = [
-  "puta",
-  "puto",
-  "putita",
-  "putito",
-  "mierda",
-  "pendejo",
-  "pendeja",
-  "cabron",
-  "cabrona",
-  "verga",
-  "chinga",
-  "chingar",
-  "carajo",
-  "culero",
-  "culera",
-  "maricon",
-  "marica",
-  "gilipollas",
-  "hijueputa",
-  "hdp",
-  "conchatumadre",
-  "conchasumadre",
-  "conchesumadre",
-  "huevon",
-  "huevona",
-  "malparido",
-  "malparida",
-  "estupido",
-  "estupida",
-  "idiota",
-  "imbecil",
-  "fuck",
-  "shit",
-  "bitch",
-  "asshole",
-  "bastard",
-  "whore",
-  "slut",
-  "cunt",
-  "nigger",
-  "faggot",
-  "nazi",
-  "hitler",
-];
-
-function containsBlockedWord(value: string): boolean {
-  const normalized = value
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "");
-  return PSEUDONYM_BLOCKLIST.some((word) => normalized.includes(word));
-}
-
 export const PREP_TIME_VALUES = [
   "recien_empiezo",
   "menos_3_meses",
@@ -122,9 +72,9 @@ const updateSchema = z.object({
   pseudonym: z
     .string()
     .trim()
-    .min(3)
-    .max(30)
-    .regex(/^[a-zA-Z0-9_-]+$/)
+    .min(PSEUDONYM_MIN_LENGTH)
+    .max(PSEUDONYM_MAX_LENGTH)
+    .regex(PSEUDONYM_FORMAT_REGEX)
     .nullable()
     .optional(),
   career: z.string().trim().max(120).nullable().optional(),
