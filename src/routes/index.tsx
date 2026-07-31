@@ -27,8 +27,6 @@ import { TrustPill } from "@/components/landing/trust-pill";
 import { WhatsAppFloat } from "@/components/whatsapp-float";
 import { cn } from "@/lib/utils";
 import { useActiveSection } from "@/hooks/use-active-section";
-import { useInViewOnce } from "@/hooks/use-in-view-once";
-import { useInViewport } from "@/hooks/use-in-viewport";
 import { useCountUp } from "@/hooks/use-count-up";
 import { useScrollProgress } from "@/hooks/use-scroll-progress";
 import { useBetaStatus } from "@/hooks/use-beta-status";
@@ -233,6 +231,7 @@ const START_STEPS = [
         .
       </>
     ),
+    premium: true,
   },
 ];
 
@@ -248,11 +247,6 @@ function Index() {
   const { data: topics } = useSuspenseQuery(topicsQO);
   const { data: unis } = useSuspenseQuery(uniQO);
   const totalExercises = topics.reduce((s, t) => s + t.exerciseCount, 0);
-  const { ref: rankingRef, visible: rankingVisible } = useInViewOnce<HTMLDivElement>();
-  const { ref: rankingIntroRef, visible: rankingIntroVisible } = useInViewOnce<HTMLDivElement>();
-  const { ref: startRef, visible: startVisible } = useInViewOnce<HTMLDivElement>();
-  const { ref: retoRef, visible: retoVisible } = useInViewOnce<HTMLDivElement>();
-  const { ref: planesRef, visible: planesVisible } = useInViewOnce<HTMLDivElement>(0.3);
   // useBetaStatus (público, sin auth) en vez de usePlan: la mayoría de
   // visitantes del landing no tienen sesión, y usePlan solo consulta cuando
   // signedIn === true — acá necesitamos que también funcione para un
@@ -262,20 +256,16 @@ function Index() {
   // tarjeta de precio real (lengthScale=1 por defecto) — ver useCornerRibbon
   // para por qué el ángulo no puede ser un rotate-X fijo.
   const { ref: priceCardRef, ribbon } = useCornerRibbon<HTMLDivElement>();
-  const { ref: faqRef, visible: faqVisible } = useInViewOnce<HTMLDivElement>();
-  const { ref: ctaRef, visible: ctaVisible } = useInViewOnce<HTMLDivElement>(0.3);
   const scrollProgressRef = useScrollProgress<HTMLDivElement>();
   // Parallax removed (isolation test, see styles.css/use-parallax.ts for the
   // revert path) — the seven `ref={xRef}` attachments below were also
   // removed, along with each element's `transform: translateY(var(--parallax-y))`
   // + `willChange` inline style, since with nothing registered there's no
   // offset to apply.
+  // Solo para el indicador de sección activa en SectionNav — el dimado por
+  // opacidad de cada sección al bajar (fadeSection) se quitó a pedido: la
+  // página ahora es estática, sin resaltado ligado al scroll.
   const activeId = useActiveSection(NAV_ITEMS.map((item) => item.id));
-  const fadeSection = (id: string) =>
-    cn(
-      "transition-opacity duration-500 ease-out motion-reduce:transition-none",
-      activeId === id ? "opacity-100" : "opacity-80",
-    );
 
   // Las 5 preguntas que más frenan a un postulante antes de registrarse
   // (crédibilidad de los exámenes, cobertura, privacidad del ranking, costo)
@@ -342,7 +332,6 @@ function Index() {
         className={cn(
           "relative overflow-hidden border-b border-border",
           "snap-section flex flex-col justify-center",
-          fadeSection("hero"),
         )}
       >
         {/* Ambient depth: two large soft glows (amber = pencil light, teal =
@@ -503,7 +492,7 @@ function Index() {
       </section>
 
       {/* Los 3 pilares */}
-      <PillarsSection sectionActive={activeId === "pilares"} />
+      <PillarsSection />
 
       {/* Cómo empezar: reassurance section para quien recién llega — sin
           cronómetro, sin ranking, sin urgencia todavía. Navy plano (sin
@@ -514,7 +503,6 @@ function Index() {
         className={cn(
           "relative overflow-hidden border-b border-border",
           "snap-section flex flex-col justify-center",
-          fadeSection("empezar"),
         )}
       >
         {/* Marca de agua decorativa: una brújula a gran escala y casi
@@ -527,7 +515,7 @@ function Index() {
         >
           <Compass className="h-[24rem] w-[24rem]" strokeWidth={1} />
         </div>
-        <div ref={startRef} className="relative mx-auto max-w-6xl px-4 py-16 sm:py-24">
+        <div className="relative mx-auto max-w-6xl px-4 py-16 sm:py-24">
           <div className="mx-auto max-w-xl text-center">
             <h2 className="text-balance text-[clamp(1.75rem,1.5rem+1.2vw,2.5rem)] font-bold tracking-[-0.03em]">
               No necesitas ser el mejor para empezar hoy.
@@ -551,13 +539,7 @@ function Index() {
           <div className="mt-10 flex flex-col gap-6 lg:flex-row lg:items-stretch lg:gap-0">
             {START_STEPS.map((s, i) => (
               <Fragment key={s.title}>
-                <div
-                  className={cn(
-                    startVisible && "animate-rise-in",
-                    "group rounded-lg border border-border bg-card p-6 transition-transform duration-[350ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:-translate-y-2 lg:flex-1",
-                  )}
-                  style={startVisible ? ({ "--i": i * 2 } as React.CSSProperties) : undefined}
-                >
+                <div className="group rounded-lg border border-border bg-card p-6 transition-transform duration-[350ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:-translate-y-2 lg:flex-1">
                   <span className="font-data grid h-9 w-9 place-items-center rounded-full bg-primary text-base font-bold text-primary-foreground transition-transform duration-[350ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:rotate-12 group-hover:scale-110">
                     {i + 1}
                   </span>
@@ -587,15 +569,7 @@ function Index() {
                     aria-hidden
                     className="hidden w-10 shrink-0 pointer-events-none pt-[42px] lg:block"
                   >
-                    <span
-                      className={cn(
-                        "step-connector block h-px w-full bg-gradient-to-r from-primary/60 to-primary/10",
-                        startVisible && "animate-step-draw",
-                      )}
-                      style={
-                        startVisible ? ({ "--i": i * 2 + 1 } as React.CSSProperties) : undefined
-                      }
-                    />
+                    <span className="step-connector block h-px w-full bg-gradient-to-r from-primary/60 to-primary/10" />
                   </div>
                 )}
               </Fragment>
@@ -620,19 +594,14 @@ function Index() {
         className={cn(
           "at-paper relative overflow-hidden border-b border-border",
           "snap-section flex flex-col justify-center",
-          fadeSection("reto"),
         )}
       >
-        <SectionSweep />
         <div
           aria-hidden
           className="pointer-events-none absolute -left-24 top-0 h-72 w-72 rounded-full bg-primary/10 blur-[100px]"
         />
-        <div
-          ref={retoRef}
-          className="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:py-24 lg:grid-cols-[1fr_1.1fr] lg:items-center"
-        >
-          <div className={cn(retoVisible && "animate-rise-in")}>
+        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:py-24 lg:grid-cols-[1fr_1.1fr] lg:items-center">
+          <div>
             <span className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
               <span className="inline-flex h-2 w-2 rounded-full bg-foreground/70" aria-hidden />{" "}
               Reto del día
@@ -663,7 +632,6 @@ function Index() {
               // que el widget lo tapa por completo y no asoma navy cuadrado
               // detrás de sus esquinas redondeadas.
               "at mx-auto w-full max-w-sm rounded-lg lg:max-w-none",
-              retoVisible && "animate-rise-in",
             )}
           >
             <Suspense fallback={<AnswerSheetSkeleton />}>
@@ -676,13 +644,8 @@ function Index() {
       {/* Ranking / community */}
       <section
         id="ranking"
-        className={cn(
-          "relative overflow-hidden",
-          "snap-section flex flex-col justify-center",
-          fadeSection("ranking"),
-        )}
+        className={cn("relative overflow-hidden", "snap-section flex flex-col justify-center")}
       >
-        <SectionSweep />
         {/* Los rivales existen: grupo de postulantes como fondo de toda la
             sección, oscurecido hacia la derecha donde vive el texto (el
             cuadro de puntaje ahora va a la izquierda, ver order-* abajo). */}
@@ -702,11 +665,8 @@ function Index() {
           aria-hidden
           className="pointer-events-none absolute -left-24 top-1/4 h-72 w-72 rounded-full bg-success/[0.12] blur-[100px]"
         />
-        <div
-          ref={rankingIntroRef}
-          className="relative mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:py-24 lg:grid-cols-[1.1fr_1fr] lg:items-center"
-        >
-          <div className={cn(rankingIntroVisible && "animate-rise-in", "lg:order-2")}>
+        <div className="relative mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:py-24 lg:grid-cols-[1.1fr_1fr] lg:items-center">
+          <div className="lg:order-2">
             <span className="inline-flex items-center gap-2 text-sm font-semibold text-primary">
               <Trophy className="h-4 w-4" /> Ranking anónimo
             </span>
@@ -728,13 +688,7 @@ function Index() {
             </Button>
           </div>
 
-          <div
-            ref={rankingRef}
-            className={cn(
-              rankingVisible && "animate-rise-in",
-              "overflow-hidden rounded-lg border border-border bg-card lg:order-1",
-            )}
-          >
+          <div className="overflow-hidden rounded-lg border border-border bg-card lg:order-1">
             <div className="flex items-center justify-between border-b border-border px-5 py-3">
               <span className="font-data text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                 PUCP · Últimos 3 meses
@@ -745,13 +699,7 @@ function Index() {
               {LEADERBOARD.map((row, i) => (
                 <li
                   key={row.rank}
-                  className={cn(
-                    rankingVisible && "animate-fade-up",
-                    "flex items-center gap-3 border-b border-border px-5 py-3 last:border-b-0",
-                  )}
-                  style={
-                    rankingVisible ? ({ "--i": Math.min(i, 10) } as React.CSSProperties) : undefined
-                  }
+                  className="flex items-center gap-3 border-b border-border px-5 py-3 last:border-b-0"
                 >
                   <span className="font-data w-5 text-sm text-muted-foreground">{row.rank}</span>
                   <span className="flex-1 text-sm font-medium">{row.handle}</span>
@@ -760,17 +708,7 @@ function Index() {
                   </span>
                 </li>
               ))}
-              <li
-                className={cn(
-                  rankingVisible && "animate-fade-up",
-                  "relative flex items-center gap-3 border-t border-primary/30 px-5 py-3",
-                )}
-                style={
-                  rankingVisible
-                    ? ({ "--i": Math.min(LEADERBOARD.length, 10) } as React.CSSProperties)
-                    : undefined
-                }
-              >
+              <li className="relative flex items-center gap-3 border-t border-primary/30 px-5 py-3">
                 {/* Tinte propio en un elemento aparte: así respira sin pelear
                     con la animación de entrada de la fila (misma propiedad
                     `animation` no se puede compartir entre dos clases). */}
@@ -793,10 +731,8 @@ function Index() {
         className={cn(
           "relative overflow-hidden bg-primary text-primary-foreground",
           "snap-section flex flex-col justify-center",
-          fadeSection("planes"),
         )}
       >
-        <SectionSweep className="via-primary-foreground/70" />
         {/* Marca de agua decorativa: en tinta navy sobre el ámbar (mismo dúo
             de color de la sección, ninguna tercera tonalidad) — nunca un
             glow nuevo, ver el One Glow Rule en DESIGN.md. Parallax removido
@@ -807,11 +743,8 @@ function Index() {
         >
           <Banknote className="h-[22rem] w-[22rem]" strokeWidth={1} />
         </div>
-        <div
-          ref={planesRef}
-          className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 sm:py-20 lg:grid-cols-[1.15fr_1fr]"
-        >
-          <div className={cn(planesVisible && "animate-rise-in")}>
+        <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 sm:py-20 lg:grid-cols-[1.15fr_1fr]">
+          <div>
             <span className="font-data text-[0.7rem] font-bold uppercase tracking-[0.14em]">
               Planes y precios
             </span>
@@ -839,11 +772,7 @@ function Index() {
               a las esquinas redondeadas de la tarjeta. */}
           <div
             ref={priceCardRef}
-            className={cn(
-              planesVisible && "animate-rise-in",
-              "relative overflow-hidden rounded-lg bg-background p-6 text-foreground shadow-[0_8px_8px_-4px_rgba(15,23,42,0.45)] sm:p-8",
-            )}
-            style={planesVisible ? ({ "--i": 2 } as React.CSSProperties) : undefined}
+            className="relative overflow-hidden rounded-lg bg-background p-6 text-foreground shadow-[0_8px_8px_-4px_rgba(15,23,42,0.45)] sm:p-8"
           >
             {/* Cinta diagonal (solo durante la beta): el precio se sigue
                 mostrando tal cual — para que el estudiante vea que Premium
@@ -905,7 +834,6 @@ function Index() {
         id="faq"
         className={cn(
           "at-paper snap-section relative flex flex-col justify-center border-b border-border",
-          fadeSection("faq"),
         )}
       >
         {/* Marca de agua decorativa, mismo criterio que Pilares/Empezar: un
@@ -915,7 +843,7 @@ function Index() {
             <HelpCircle className="h-[24rem] w-[24rem]" strokeWidth={1} />
           </div>
         </div>
-        <div ref={faqRef} className="relative mx-auto max-w-3xl px-4 py-16 sm:py-24">
+        <div className="relative mx-auto max-w-3xl px-4 py-16 sm:py-24">
           <div className="max-w-xl">
             <h2 className="text-balance text-[clamp(1.75rem,1.5rem+1.2vw,2.5rem)] font-bold tracking-[-0.03em]">
               Antes de registrarte
@@ -931,11 +859,7 @@ function Index() {
               animación por completo: abre/cierra instantáneo, texto mismo
               tamaño en pregunta y respuesta (ver AccordionContent) así no
               queda ningún salto de tamaño que disimular con una animación. */}
-          <Accordion
-            type="single"
-            collapsible
-            className={cn("faq-accordion mt-10", faqVisible && "animate-rise-in")}
-          >
+          <Accordion type="single" collapsible className="faq-accordion mt-10">
             {FAQ_ITEMS.map((item, i) => (
               <AccordionItem key={item.q} value={`item-${i}`}>
                 <AccordionTrigger className="font-display text-base font-bold">
@@ -956,10 +880,8 @@ function Index() {
         className={cn(
           "relative overflow-hidden border-t border-border",
           "snap-section flex flex-col justify-center",
-          fadeSection("cta"),
         )}
       >
-        <SectionSweep />
         {/* Real exam moment: a hand writing on answer sheets, desaturated and
             sunk into the navy so the type keeps full contrast. */}
         <img
@@ -974,39 +896,18 @@ function Index() {
           aria-hidden
           className="absolute inset-0 bg-gradient-to-t from-background via-background/65 to-background/35"
         />
-        <div
-          ref={ctaRef}
-          className="relative mx-auto flex max-w-4xl flex-col items-center gap-6 px-4 py-24 text-center"
-        >
-          <div
-            className={cn(ctaVisible && "animate-rise-in")}
-            style={{ "--i": 0 } as React.CSSProperties}
-          >
+        <div className="relative mx-auto flex max-w-4xl flex-col items-center gap-6 px-4 py-24 text-center">
+          <div>
             <TrustPill>Únete en menos de un minuto</TrustPill>
           </div>
-          <h2
-            className={cn(
-              ctaVisible && "animate-rise-in",
-              "text-balance text-[clamp(1.75rem,1.4rem+1.6vw,3rem)] font-bold tracking-[-0.03em]",
-            )}
-            style={{ "--i": 2 } as React.CSSProperties}
-          >
+          <h2 className="text-balance text-[clamp(1.75rem,1.4rem+1.6vw,3rem)] font-bold tracking-[-0.03em]">
             Tu próximo simulacro puede empezar ahora mismo.
           </h2>
-          <p
-            className={cn(
-              ctaVisible && "animate-rise-in",
-              "max-w-md text-pretty text-muted-foreground",
-            )}
-            style={{ "--i": 4 } as React.CSSProperties}
-          >
+          <p className="max-w-md text-pretty text-muted-foreground">
             Crea tu cuenta gratis y elige tu universidad.{" "}
             <strong className="font-semibold text-foreground">Sin tarjeta, sin compromiso.</strong>
           </p>
-          <div
-            className={cn(ctaVisible && "animate-rise-in")}
-            style={{ "--i": 6 } as React.CSSProperties}
-          >
+          <div>
             <Button asChild size="lg" className="press cta-overshoot min-h-11">
               <Link to="/auth" onClick={() => fireConfetti()}>
                 Crear cuenta gratis <ArrowRight className="ml-2 h-4 w-4" />
@@ -1039,34 +940,6 @@ function StaggeredWords({ text, startIndex = 0 }: { text: string; startIndex?: n
         </span>
       ))}
     </>
-  );
-}
-
-// Thin gradient line that sweeps across a section's top edge once, the
-// moment it scrolls into view — the "something changed" cue between
-// sections. A line, not a blur, so it never competes with the hero widget's
-// one ambient glow (see the One Glow Rule in DESIGN.md).
-// Self-observes its own position (useInViewport, bidirectional) instead of
-// taking a `visible` prop from the parent's one-shot useInViewOnce flag —
-// that flag latches true forever on first sight, which meant this
-// `infinite` CSS animation kept looping for every section long after it
-// scrolled off-screen, accumulating as the page got scrolled further.
-function SectionSweep({ className }: { className?: string }) {
-  const { ref, inView } = useInViewport<HTMLDivElement>(0);
-  return (
-    <div
-      ref={ref}
-      aria-hidden
-      className="pointer-events-none absolute inset-x-0 top-0 z-10 h-px overflow-hidden"
-    >
-      <span
-        className={cn(
-          "absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-primary/70 to-transparent",
-          inView && "animate-sweep-line",
-          className,
-        )}
-      />
-    </div>
   );
 }
 

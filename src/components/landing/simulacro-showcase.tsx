@@ -1,5 +1,3 @@
-import { useInViewOnce } from "@/hooks/use-in-view-once";
-import { useCountUp } from "@/hooks/use-count-up";
 import { cn } from "@/lib/utils";
 
 /**
@@ -57,23 +55,15 @@ export function SimulacroShowcase({
   highlightPillar?: number | null;
   onSelectPillar?: (n: number) => void;
 }) {
-  const { ref, visible } = useInViewOnce<HTMLDivElement>(0.3);
-  const score = useCountUp(1059, visible, 2000);
+  const score = 1059;
   const hasSelection = highlightPillar != null;
 
   return (
-    <div ref={ref} className="w-full">
+    <div className="w-full">
       {/* Marco de navegador: la sección se lee como una captura real del
           producto, no como una tarjeta de marketing más — refuerzo de
           "esto existe de verdad" para quien recién llega. */}
-      <div
-        className={cn(
-          "at",
-          visible && "animate-fade-up",
-          "relative overflow-hidden rounded-xl bg-muted/60 shadow-[0_8px_8px_-4px_rgba(15,23,42,0.4)]",
-        )}
-        style={{ "--i": 2 } as React.CSSProperties}
-      >
+      <div className="at relative overflow-hidden rounded-xl bg-muted/60 shadow-[0_8px_8px_-4px_rgba(15,23,42,0.4)]">
         <div className="flex items-center gap-3 border-b border-border px-3 py-2 sm:px-4 sm:py-2.5">
           <div className="flex gap-1.5" aria-hidden>
             <span className="h-2.5 w-2.5 rounded-full bg-destructive/40" />
@@ -119,14 +109,7 @@ export function SimulacroShowcase({
               </p>
 
               <div className="relative mt-3 h-2.5 rounded-full bg-muted sm:mt-5 sm:h-3">
-                {/* max-sm:transition-none: en celular el ancho salta directo
-                    a su valor final sin animar (mismo criterio que el resto
-                    de animaciones de landing apagadas bajo 640px) — la barra
-                    sigue llegando a 55%, solo que sin el barrido de 1s. */}
-                <div
-                  className="h-full rounded-full bg-primary transition-[width] duration-1000 ease-out max-sm:transition-none"
-                  style={{ width: visible ? "55%" : "0%" }}
-                />
+                <div className="h-full rounded-full bg-primary" style={{ width: "55%" }} />
                 {/* Línea del mínimo al 52% */}
                 <div className="absolute -top-1.5 bottom-[-6px] left-[52%] w-0.5 rounded bg-foreground/70" />
               </div>

@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { MathText, ChoiceText } from "@/lib/math-render";
 import { dailyExerciseQO, submitDailyExerciseAnswer } from "@/lib/daily-exercise.functions";
-import { useInViewOnce } from "@/hooks/use-in-view-once";
 
 const difficultyLabel = { facil: "Fácil", medio: "Medio", dificil: "Difícil" } as const;
 
@@ -71,8 +70,6 @@ export function AnswerSheetWidget() {
     totalAnswers: number;
     correctAnswers: number;
   } | null>(null);
-  const { ref: rootRef, visible } = useInViewOnce<HTMLDivElement>();
-
   // Resume where this visitor left off for today's exercise: already answered
   // (freeze the clock, show the "ya resuelto" message), mid-attempt (keep the
   // clock counting from the real start time instead of resetting on refresh),
@@ -151,10 +148,7 @@ export function AnswerSheetWidget() {
     : null;
 
   return (
-    <div
-      ref={rootRef}
-      className="relative overflow-hidden rounded-lg border border-border bg-card shadow-[0_0_0_1px_rgba(0,0,0,0.2)]"
-    >
+    <div className="relative overflow-hidden rounded-lg border border-border bg-card shadow-[0_0_0_1px_rgba(0,0,0,0.2)]">
       <div
         aria-hidden
         className="animate-glow pointer-events-none absolute -right-16 -top-16 h-32 w-32 rounded-full bg-primary/15 blur-3xl"
@@ -235,7 +229,6 @@ export function AnswerSheetWidget() {
                     disabled={!!result || submitting}
                     onClick={() => handleSelect(i)}
                     className={cn(
-                      visible && "animate-reveal-row",
                       "press flex w-full items-center gap-3 rounded-md border px-3 py-2.5 text-left transition-colors duration-300 disabled:cursor-default",
                       isAnswerRow
                         ? "border-success/60 bg-success/10"
@@ -245,7 +238,6 @@ export function AnswerSheetWidget() {
                             ? "border-primary bg-primary/10"
                             : "border-border bg-transparent hover:border-primary/40",
                     )}
-                    style={visible ? { animationDelay: `${i * 70}ms` } : undefined}
                   >
                     <span
                       className={cn(

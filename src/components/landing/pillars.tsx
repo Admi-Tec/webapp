@@ -1,9 +1,7 @@
 import { useRef, useState } from "react";
 import { Gauge, ListChecks, Target } from "lucide-react";
-import { useInViewOnce } from "@/hooks/use-in-view-once";
 import { SimulacroShowcase } from "@/components/landing/simulacro-showcase";
 import { FeatureCarousel } from "@/components/landing/feature-carousel";
-import { cn } from "@/lib/utils";
 
 /**
  * Los 3 pilares diferenciadores del producto sobre papel claro (.at-paper).
@@ -58,8 +56,7 @@ const PILLARS: Array<{
   },
 ];
 
-export function PillarsSection({ sectionActive }: { sectionActive: boolean }) {
-  const { ref, visible } = useInViewOnce<HTMLDivElement>();
+export function PillarsSection() {
   // El carrusel reporta qué pilar queda centrado al arrastrar — controla el
   // resaltado dentro del simulacro real de al lado, así que deslizar una
   // tarjeta y ver su bloque iluminarse en el resultado son el mismo gesto.
@@ -84,11 +81,7 @@ export function PillarsSection({ sectionActive }: { sectionActive: boolean }) {
   return (
     <section
       id="pilares"
-      className={cn(
-        "at-paper snap-section relative flex flex-col justify-center border-y border-border",
-        "transition-opacity duration-500 ease-out motion-reduce:transition-none",
-        sectionActive ? "opacity-100" : "opacity-80",
-      )}
+      className="at-paper snap-section relative flex flex-col justify-center border-y border-border"
     >
       {/* Marca de agua decorativa: el ícono del primer pilar, a gran escala
           y casi invisible — profundidad sin competir con el texto ni sumar
@@ -115,26 +108,16 @@ export function PillarsSection({ sectionActive }: { sectionActive: boolean }) {
           </p>
         </div>
 
-        <div
-          ref={ref}
-          className="mt-12 grid gap-8 lg:grid-cols-[minmax(0,1fr)_26rem] lg:items-start lg:gap-10"
-        >
+        <div className="mt-12 grid gap-8 lg:grid-cols-[minmax(0,1fr)_26rem] lg:items-start lg:gap-10">
           {/* Centro de atención: el simulacro real — el mismo lenguaje de
               "objeto vivo" que antes llevaban las tarjetas, ahora reservado
               para lo único que importa mostrar de verdad. Tilt 3D al mouse
               removido (se sentía como un efecto de zoom). */}
-          <div
-            className={cn(visible && "animate-rise-in", "min-w-0 lg:sticky lg:top-24")}
-            style={visible ? ({ "--i": 2 } as React.CSSProperties) : undefined}
-          >
+          <div className="min-w-0 lg:sticky lg:top-24">
             <SimulacroShowcase highlightPillar={active} onSelectPillar={handleSelectPillar} />
           </div>
 
-          <div
-            ref={carouselWrapRef}
-            className={cn(visible && "animate-rise-in", "flex min-w-0 flex-col")}
-            style={visible ? ({ "--i": 4 } as React.CSSProperties) : undefined}
-          >
+          <div ref={carouselWrapRef} className="flex min-w-0 flex-col">
             <FeatureCarousel items={PILLARS} activeIndex={active} onActiveChange={setActive} />
           </div>
         </div>
