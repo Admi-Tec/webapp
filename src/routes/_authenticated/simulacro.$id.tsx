@@ -23,8 +23,15 @@ import { requestExamFullscreen } from "@/lib/exam-fullscreen";
 import { ExamAttemptRow } from "@/components/exam-attempt-row";
 import { PremiumLockChip, usePremiumGate } from "@/components/premium/premium-gate";
 import { ComingSoonChip } from "@/components/coming-soon-chip";
+import { pageMeta } from "@/lib/site";
 
 export const Route = createFileRoute("/_authenticated/simulacro/$id")({
+  head: ({ params }) =>
+    pageMeta({
+      path: `/simulacro/${params.id}`,
+      title: "Vista previa del simulacro",
+      description: "Revisa el detalle del simulacro antes de generarlo y rendirlo.",
+    }),
   component: SimulacroPreview,
 });
 

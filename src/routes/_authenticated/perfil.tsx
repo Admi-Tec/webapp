@@ -30,6 +30,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useSaveFeedback } from "@/hooks/use-save-feedback";
 import { DeleteAccountButton } from "@/components/delete-account-button";
+import { pageMeta } from "@/lib/site";
 
 const PREP_TIME_OPTIONS: Array<{ value: (typeof PREP_TIME_VALUES)[number]; label: string }> = [
   { value: "recien_empiezo", label: "Recién empiezo" },
@@ -46,7 +47,12 @@ const PREP_METHOD_OPTIONS: Array<{ value: (typeof PREP_METHOD_VALUES)[number]; l
 ];
 
 export const Route = createFileRoute("/_authenticated/perfil")({
-  head: () => ({ meta: [{ title: "Perfil · MatePre" }] }),
+  head: () =>
+    pageMeta({
+      path: "/perfil",
+      title: "Perfil",
+      description: "Administra tu perfil, universidad objetivo y preferencias de cuenta.",
+    }),
   component: PerfilPage,
   errorComponent: ({ error }) => (
     <div className="mx-auto max-w-3xl px-4 py-16 text-center text-sm text-destructive">

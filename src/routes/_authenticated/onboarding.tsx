@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { pageMeta } from "@/lib/site";
 import { queryOptions, useSuspenseQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -32,7 +33,12 @@ import type { Tables } from "@/integrations/supabase/types";
 type CareerRow = Pick<Tables<"careers">, "id" | "name" | "active" | "university_id">;
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
-  head: () => ({ meta: [{ title: "Bienvenido · MatePre" }] }),
+  head: () =>
+    pageMeta({
+      path: "/onboarding",
+      title: "Bienvenido",
+      description: "Configura tu universidad objetivo, tiempo de estudio y método de preparación.",
+    }),
   component: OnboardingPage,
 });
 

@@ -7,9 +7,15 @@ import { ExerciseCardSkeleton, LoadingNotice } from "@/components/skeletons";
 import { useState, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Star } from "lucide-react";
+import { pageMeta } from "@/lib/site";
 
 export const Route = createFileRoute("/_authenticated/favoritas")({
-  head: () => ({ meta: [{ title: "Favoritas · MatePre" }] }),
+  head: () =>
+    pageMeta({
+      path: "/favoritas",
+      title: "Favoritas",
+      description: "Ejercicios que guardaste como favoritos para repasarlos cuando quieras.",
+    }),
   component: FavoritesPage,
 });
 

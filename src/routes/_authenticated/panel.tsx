@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { pageMeta } from "@/lib/site";
 import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo } from "react";
@@ -24,7 +25,12 @@ import {
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/panel")({
-  head: () => ({ meta: [{ title: "Panel · MatePre" }] }),
+  head: () =>
+    pageMeta({
+      path: "/panel",
+      title: "Panel",
+      description: "Tu progreso, racha de estudio y recomendaciones diarias de práctica.",
+    }),
   component: PanelPage,
   errorComponent: ({ error }) => (
     <div className="mx-auto max-w-3xl px-4 py-16 text-center text-sm text-destructive">

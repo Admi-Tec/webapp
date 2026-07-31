@@ -25,8 +25,15 @@ import { FavoriteButton } from "@/components/favorite-button";
 import { ZoomableImage } from "@/components/zoomable-image";
 import { useExamAwayGuard } from "@/hooks/use-exam-away-guard";
 import { groupQuestionsByTopic } from "@/lib/group-questions-by-topic";
+import { pageMeta } from "@/lib/site";
 
 export const Route = createFileRoute("/_authenticated/examen-sesion/$sessionId/")({
+  head: ({ params }) =>
+    pageMeta({
+      path: `/examen-sesion/${params.sessionId}`,
+      title: "Rindiendo examen",
+      description: "Examen en curso.",
+    }),
   component: TakeExam,
 });
 

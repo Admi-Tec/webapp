@@ -18,9 +18,15 @@ import {
 } from "@/lib/leaderboard.functions";
 import { getFullProfile } from "@/lib/profile.functions";
 import { PremiumOverlay } from "@/components/premium/premium-gate";
+import { pageMeta } from "@/lib/site";
 
 export const Route = createFileRoute("/_authenticated/ranking")({
-  head: () => ({ meta: [{ title: "Ranking · MatePre" }] }),
+  head: () =>
+    pageMeta({
+      path: "/ranking",
+      title: "Ranking",
+      description: "Compara tu desempeño de forma anónima con otros postulantes a tu universidad.",
+    }),
   component: RankingPage,
 });
 

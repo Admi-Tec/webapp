@@ -13,6 +13,7 @@ import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as RestablecerPasswordRouteImport } from './routes/restablecer-password'
 import { Route as PlanesRouteImport } from './routes/planes'
+import { Route as LlmsDottxtRouteImport } from './routes/llms[.]txt'
 import { Route as LibroDeReclamacionesRouteImport } from './routes/libro-de-reclamaciones'
 import { Route as ExamenesOficialesRouteImport } from './routes/examenes-oficiales'
 import { Route as BuscarRouteImport } from './routes/buscar'
@@ -70,6 +71,11 @@ const RestablecerPasswordRoute = RestablecerPasswordRouteImport.update({
 const PlanesRoute = PlanesRouteImport.update({
   id: '/planes',
   path: '/planes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LlmsDottxtRoute = LlmsDottxtRouteImport.update({
+  id: '/llms.txt',
+  path: '/llms.txt',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LibroDeReclamacionesRoute = LibroDeReclamacionesRouteImport.update({
@@ -285,6 +291,7 @@ export interface FileRoutesByFullPath {
   '/buscar': typeof BuscarRoute
   '/examenes-oficiales': typeof ExamenesOficialesRoute
   '/libro-de-reclamaciones': typeof LibroDeReclamacionesRoute
+  '/llms.txt': typeof LlmsDottxtRoute
   '/planes': typeof PlanesRoute
   '/restablecer-password': typeof RestablecerPasswordRoute
   '/robots.txt': typeof RobotsDottxtRoute
@@ -328,6 +335,7 @@ export interface FileRoutesByTo {
   '/buscar': typeof BuscarRoute
   '/examenes-oficiales': typeof ExamenesOficialesRoute
   '/libro-de-reclamaciones': typeof LibroDeReclamacionesRoute
+  '/llms.txt': typeof LlmsDottxtRoute
   '/planes': typeof PlanesRoute
   '/restablecer-password': typeof RestablecerPasswordRoute
   '/robots.txt': typeof RobotsDottxtRoute
@@ -372,6 +380,7 @@ export interface FileRoutesById {
   '/buscar': typeof BuscarRoute
   '/examenes-oficiales': typeof ExamenesOficialesRoute
   '/libro-de-reclamaciones': typeof LibroDeReclamacionesRoute
+  '/llms.txt': typeof LlmsDottxtRoute
   '/planes': typeof PlanesRoute
   '/restablecer-password': typeof RestablecerPasswordRoute
   '/robots.txt': typeof RobotsDottxtRoute
@@ -417,6 +426,7 @@ export interface FileRouteTypes {
     | '/buscar'
     | '/examenes-oficiales'
     | '/libro-de-reclamaciones'
+    | '/llms.txt'
     | '/planes'
     | '/restablecer-password'
     | '/robots.txt'
@@ -460,6 +470,7 @@ export interface FileRouteTypes {
     | '/buscar'
     | '/examenes-oficiales'
     | '/libro-de-reclamaciones'
+    | '/llms.txt'
     | '/planes'
     | '/restablecer-password'
     | '/robots.txt'
@@ -503,6 +514,7 @@ export interface FileRouteTypes {
     | '/buscar'
     | '/examenes-oficiales'
     | '/libro-de-reclamaciones'
+    | '/llms.txt'
     | '/planes'
     | '/restablecer-password'
     | '/robots.txt'
@@ -548,6 +560,7 @@ export interface RootRouteChildren {
   BuscarRoute: typeof BuscarRoute
   ExamenesOficialesRoute: typeof ExamenesOficialesRoute
   LibroDeReclamacionesRoute: typeof LibroDeReclamacionesRoute
+  LlmsDottxtRoute: typeof LlmsDottxtRoute
   PlanesRoute: typeof PlanesRoute
   RestablecerPasswordRoute: typeof RestablecerPasswordRoute
   RobotsDottxtRoute: typeof RobotsDottxtRoute
@@ -590,6 +603,13 @@ declare module '@tanstack/react-router' {
       path: '/planes'
       fullPath: '/planes'
       preLoaderRoute: typeof PlanesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/llms.txt': {
+      id: '/llms.txt'
+      path: '/llms.txt'
+      fullPath: '/llms.txt'
+      preLoaderRoute: typeof LlmsDottxtRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/libro-de-reclamaciones': {
@@ -955,6 +975,7 @@ const rootRouteChildren: RootRouteChildren = {
   BuscarRoute: BuscarRoute,
   ExamenesOficialesRoute: ExamenesOficialesRoute,
   LibroDeReclamacionesRoute: LibroDeReclamacionesRoute,
+  LlmsDottxtRoute: LlmsDottxtRoute,
   PlanesRoute: PlanesRoute,
   RestablecerPasswordRoute: RestablecerPasswordRoute,
   RobotsDottxtRoute: RobotsDottxtRoute,

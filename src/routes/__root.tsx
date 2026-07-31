@@ -96,7 +96,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { property: "og:description", content: SITE_DESCRIPTION },
       { property: "og:type", content: "website" },
-      { property: "og:image", content: absoluteUrl("/favicon.svg") },
+      { property: "og:image", content: absoluteUrl("/og-image.png") },
+      { property: "og:image:type", content: "image/png" },
       { property: "og:image:width", content: "1200" },
       { property: "og:image:height", content: "630" },
       { property: "og:locale", content: "es_PE" },
@@ -106,7 +107,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content: `${SITE_NAME} — Exámenes oficiales, simulacros y ranking para tu admisión`,
       },
       { name: "twitter:description", content: SITE_DESCRIPTION },
-      { name: "twitter:image", content: absoluteUrl("/favicon.svg") },
+      { name: "twitter:image", content: absoluteUrl("/og-image.png") },
     ],
     links: [
       { rel: "stylesheet", href: appCss },

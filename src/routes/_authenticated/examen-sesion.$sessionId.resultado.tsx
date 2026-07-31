@@ -19,8 +19,15 @@ import { ReportProblemDialog } from "@/components/report-problem-dialog";
 import { DeleteExamAttemptButton } from "@/components/delete-exam-attempt-button";
 import { PremiumOverlay } from "@/components/premium/premium-gate";
 import { usePlan } from "@/hooks/use-plan";
+import { pageMeta } from "@/lib/site";
 
 export const Route = createFileRoute("/_authenticated/examen-sesion/$sessionId/resultado")({
+  head: ({ params }) =>
+    pageMeta({
+      path: `/examen-sesion/${params.sessionId}/resultado`,
+      title: "Resultado del examen",
+      description: "Revisión detallada de tus respuestas y tu puntaje.",
+    }),
   component: ResultPage,
 });
 

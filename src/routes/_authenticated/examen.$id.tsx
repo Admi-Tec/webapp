@@ -22,8 +22,15 @@ import { requestExamFullscreen } from "@/lib/exam-fullscreen";
 import { ExamAttemptRow } from "@/components/exam-attempt-row";
 import { PremiumLockChip, usePremiumGate } from "@/components/premium/premium-gate";
 import { ComingSoonChip } from "@/components/coming-soon-chip";
+import { pageMeta } from "@/lib/site";
 
 export const Route = createFileRoute("/_authenticated/examen/$id")({
+  head: ({ params }) =>
+    pageMeta({
+      path: `/examen/${params.id}`,
+      title: "Vista previa del examen",
+      description: "Revisa el detalle del examen antes de rendirlo bajo tiempo real.",
+    }),
   component: ExamPreview,
 });
 

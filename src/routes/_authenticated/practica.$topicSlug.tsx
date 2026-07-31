@@ -22,6 +22,7 @@ import { ExerciseRating } from "@/components/exercise-rating";
 import { ReportProblemDialog } from "@/components/report-problem-dialog";
 import { ZoomableImage } from "@/components/zoomable-image";
 import { ExercisePlayerSkeleton, LoadingNotice } from "@/components/skeletons";
+import { pageMeta } from "@/lib/site";
 
 const searchSchema = z.object({
   subtopic: z.string().optional(),
@@ -34,11 +35,14 @@ export const Route = createFileRoute("/_authenticated/practica/$topicSlug")({
     if (!topic) throw notFound();
     return { topic };
   },
-  head: ({ loaderData }) => ({
-    meta: [
-      { title: loaderData ? `Práctica: ${loaderData.topic.name} · MatePre` : "Práctica · MatePre" },
-    ],
-  }),
+  head: ({ params, loaderData }) =>
+    pageMeta({
+      path: `/practica/${params.topicSlug}`,
+      title: loaderData ? `Práctica: ${loaderData.topic.name}` : "Práctica",
+      description: loaderData
+        ? `Practica ejercicios de ${loaderData.topic.name} con retroalimentación inmediata.`
+        : undefined,
+    }),
   component: PracticePage,
   errorComponent: ({ error }) => (
     <div className="mx-auto max-w-3xl px-4 py-16 text-center text-sm text-destructive">
