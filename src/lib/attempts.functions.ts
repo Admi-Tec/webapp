@@ -2,6 +2,29 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { assertPremium } from "@/lib/premium-guard";
 import { z } from "zod";
+import type { Tables } from "@/integrations/supabase/types";
+
+type AttemptWithExerciseTopicRow = Pick<Tables<"attempts">, "id" | "is_correct" | "created_at"> & {
+  exercise:
+    | (Pick<Tables<"exercises">, "id" | "statement_md"> & {
+        topic: Pick<Tables<"topics">, "slug" | "name" | "color"> | null;
+      })
+    | null;
+};
+
+type AttemptDetailRow = Pick<
+  Tables<"attempts">,
+  "id" | "is_correct" | "created_at" | "exam_session_id"
+> & {
+  exercise: {
+    topic: Pick<Tables<"topics">, "id" | "slug" | "name" | "color"> | null;
+    subtopic: Pick<Tables<"subtopics">, "id" | "name"> | null;
+  } | null;
+};
+
+type SessionWithExamTypeRow = Pick<Tables<"exam_sessions">, "id"> & {
+  exam: Pick<Tables<"exams">, "exam_type"> | null;
+};
 
 export interface TopicAccuracyRow {
   id: string;
@@ -72,7 +95,7 @@ export const getUserStats = createServerFn({ method: "GET" })
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(200);
-    const rows = attempts ?? [];
+    const rows = (attempts ?? []) as AttemptWithExerciseTopicRow[];
     const total = rows.length;
     const correct = rows.filter((r) => r.is_correct).length;
     const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
@@ -82,7 +105,7 @@ export const getUserStats = createServerFn({ method: "GET" })
       string,
       { name: string; color: string | null; total: number; correct: number }
     >();
-    rows.forEach((r: any) => {
+    rows.forEach((r) => {
       const t = r.exercise?.topic;
       if (!t) return;
       const cur = byTopic.get(t.slug) ?? {
@@ -122,7 +145,7 @@ export const getUserStats = createServerFn({ method: "GET" })
       }
     }
 
-    const recent = rows.slice(0, 10).map((r: any) => ({
+    const recent = rows.slice(0, 10).map((r) => ({
       id: r.id,
       isCorrect: r.is_correct,
       createdAt: r.created_at,
@@ -166,8 +189,9 @@ export const getTopicAccuracyDetail = createServerFn({ method: "GET" })
     // exam_session:exam_sessions(...) sin una FK real, así que el tipo de
     // contenido se resuelve con una segunda consulta y un join en TS en vez
     // de un select anidado.
+    const typedAttempts = (attempts ?? []) as AttemptDetailRow[];
     const sessionIds = Array.from(
-      new Set((attempts ?? []).map((a: any) => a.exam_session_id).filter(Boolean)),
+      new Set(typedAttempts.map((a) => a.exam_session_id).filter(Boolean)),
     ) as string[];
     const examTypeBySession = new Map<string, "standard" | "template">();
     if (sessionIds.length > 0) {
@@ -175,23 +199,23 @@ export const getTopicAccuracyDetail = createServerFn({ method: "GET" })
         .from("exam_sessions")
         .select("id, exam:exams(exam_type)")
         .in("id", sessionIds);
-      (sessions ?? []).forEach((s: any) => {
+      ((sessions ?? []) as SessionWithExamTypeRow[]).forEach((s) => {
         examTypeBySession.set(s.id, s.exam?.exam_type === "template" ? "template" : "standard");
       });
     }
 
-    const rows = (attempts ?? [])
-      .filter((r: any) => r.exercise?.topic)
-      .map((r: any) => ({
-        id: r.id as string,
-        isCorrect: r.is_correct as boolean,
-        createdAt: r.created_at as string,
-        topicId: r.exercise.topic.id as string,
-        topicSlug: r.exercise.topic.slug as string,
-        topicName: r.exercise.topic.name as string,
-        topicColor: (r.exercise.topic.color ?? null) as string | null,
-        subtopicId: (r.exercise.subtopic?.id ?? null) as string | null,
-        subtopicName: (r.exercise.subtopic?.name ?? null) as string | null,
+    const rows = typedAttempts
+      .filter((r) => r.exercise?.topic)
+      .map((r) => ({
+        id: r.id,
+        isCorrect: r.is_correct,
+        createdAt: r.created_at,
+        topicId: r.exercise!.topic!.id,
+        topicSlug: r.exercise!.topic!.slug,
+        topicName: r.exercise!.topic!.name,
+        topicColor: r.exercise!.topic!.color ?? null,
+        subtopicId: r.exercise!.subtopic?.id ?? null,
+        subtopicName: r.exercise!.subtopic?.name ?? null,
         // Sin exam_session_id = práctica libre. Con exam_session_id pero sin
         // fila encontrada (huérfano, no debería pasar) se trata como
         // simulacro: la aproximación más cercana a "generado al azar".
@@ -204,11 +228,11 @@ export const getTopicAccuracyDetail = createServerFn({ method: "GET" })
       }));
 
     const topicAvgAccuracy: Record<string, number> = {};
-    (topicAvg ?? []).forEach((r: any) => {
+    (topicAvg ?? []).forEach((r) => {
       topicAvgAccuracy[r.topic_id] = Math.round(Number(r.accuracy) * 100);
     });
     const subtopicAvgAccuracy: Record<string, number> = {};
-    (subtopicAvg ?? []).forEach((r: any) => {
+    (subtopicAvg ?? []).forEach((r) => {
       subtopicAvgAccuracy[r.subtopic_id] = Math.round(Number(r.accuracy) * 100);
     });
 
@@ -237,7 +261,7 @@ export const getTopicFrequencyByUniversity = createServerFn({ method: "GET" })
 
     const topicFrequency: Record<string, number> = {};
     const subtopicFrequency: Record<string, number> = {};
-    (rows ?? []).forEach((r: any) => {
+    (rows ?? []).forEach((r) => {
       if (r.topic_id) topicFrequency[r.topic_id] = (topicFrequency[r.topic_id] ?? 0) + 1;
       if (r.subtopic_id)
         subtopicFrequency[r.subtopic_id] = (subtopicFrequency[r.subtopic_id] ?? 0) + 1;

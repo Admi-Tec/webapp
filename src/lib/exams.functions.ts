@@ -1,8 +1,104 @@
 import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database, Tables } from "@/integrations/supabase/types";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+
+type ExamListRow = Pick<
+  Tables<"exams">,
+  | "id"
+  | "title"
+  | "description"
+  | "time_limit_min"
+  | "passing_score"
+  | "max_attempts"
+  | "status"
+  | "question_order"
+> & { exam_questions: { count: number }[] | null };
+
+type TemplateListRow = Pick<
+  Tables<"exams">,
+  "id" | "title" | "description" | "time_limit_min" | "passing_score" | "max_attempts"
+> & {
+  university: Pick<Tables<"universities">, "id" | "slug" | "short_name"> | null;
+  exam_template_rules: { question_count: number }[] | null;
+};
+
+type TemplatePreviewRow = Pick<
+  Tables<"exams">,
+  | "id"
+  | "title"
+  | "description"
+  | "time_limit_min"
+  | "passing_score"
+  | "points_correct"
+  | "points_incorrect"
+  | "points_empty"
+> & {
+  university: Pick<Tables<"universities">, "id" | "slug" | "short_name"> | null;
+  exam_template_rules:
+    | {
+        question_count: number;
+        position: number;
+        topic: Pick<Tables<"topics">, "name"> | null;
+      }[]
+    | null;
+};
+
+type ExamPreviewRow = Pick<
+  Tables<"exams">,
+  | "id"
+  | "title"
+  | "description"
+  | "time_limit_min"
+  | "passing_score"
+  | "max_attempts"
+  | "status"
+  | "question_order"
+  | "points_correct"
+  | "points_incorrect"
+  | "points_empty"
+> & { exam_questions: { count: number }[] | null };
+
+type QuestionTopicRow = { exercise: { topic: Pick<Tables<"topics">, "name"> | null } | null };
+
+type ExamSessionWithExamRow = Tables<"exam_sessions"> & {
+  exam: Pick<Tables<"exams">, "id" | "title" | "time_limit_min" | "passing_score"> | null;
+};
+
+type ExerciseQuestionRow = Pick<
+  Tables<"exercises">,
+  "id" | "statement_md" | "statement_image_path" | "choices"
+> & { topic: Pick<Tables<"topics">, "name"> | null };
+
+type TemplateSessionRow = Pick<
+  Tables<"exam_sessions">,
+  "id" | "exam_id" | "status" | "started_at" | "finished_at" | "score" | "total" | "max_score"
+> & { exam: Pick<Tables<"exams">, "id" | "title" | "exam_type"> | null };
+
+type ExamResultSessionRow = Tables<"exam_sessions"> & {
+  exam: Pick<
+    Tables<"exams">,
+    | "id"
+    | "title"
+    | "time_limit_min"
+    | "passing_score"
+    | "points_correct"
+    | "points_incorrect"
+    | "points_empty"
+  > | null;
+};
+
+type ExerciseResultRow = Pick<
+  Tables<"exercises">,
+  | "id"
+  | "statement_md"
+  | "statement_image_path"
+  | "choices"
+  | "correct_choice"
+  | "solution_md"
+  | "expected_time_ms"
+> & { topic: Pick<Tables<"topics">, "name"> | null };
 
 function publicClient() {
   return createClient<Database>(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
@@ -28,7 +124,7 @@ export const listPublishedExams = createServerFn({ method: "GET" })
     if (!data?.universitySlug) {
       const { data: exams, error } = await baseQuery;
       if (error) throw new Error(error.message);
-      return (exams ?? []).map((e: any) => ({
+      return ((exams ?? []) as ExamListRow[]).map((e) => ({
         ...e,
         questionCount: e.exam_questions?.[0]?.count ?? 0,
       }));
@@ -44,7 +140,7 @@ export const listPublishedExams = createServerFn({ method: "GET" })
 
     const { data: exams, error: examError } = await baseQuery.eq("university_id", university.id);
     if (examError) throw new Error(examError.message);
-    return (exams ?? []).map((e: any) => ({
+    return ((exams ?? []) as ExamListRow[]).map((e) => ({
       ...e,
       questionCount: e.exam_questions?.[0]?.count ?? 0,
     }));
@@ -67,7 +163,7 @@ export const listPublishedTemplates = createServerFn({ method: "GET" })
     if (data?.universityId) query = query.eq("university_id", data.universityId);
     const { data: exams, error } = await query;
     if (error) throw new Error(error.message);
-    return (exams ?? []).map((e: any) => ({
+    return ((exams ?? []) as TemplateListRow[]).map((e) => ({
       id: e.id,
       title: e.title,
       description: e.description,
@@ -76,7 +172,7 @@ export const listPublishedTemplates = createServerFn({ method: "GET" })
       max_attempts: e.max_attempts,
       university: e.university,
       totalQuestions: (e.exam_template_rules ?? []).reduce(
-        (sum: number, r: any) => sum + (r.question_count ?? 0),
+        (sum, r) => sum + (r.question_count ?? 0),
         0,
       ),
       ruleCount: (e.exam_template_rules ?? []).length,
@@ -99,14 +195,13 @@ export const getTemplatePreview = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     if (!exam) return null;
 
-    const rules = ((exam as any).exam_template_rules ?? []).sort(
-      (a: any, b: any) => a.position - b.position,
-    );
-    const topicBreakdown = rules.map((r: any) => ({
+    const typedExam = exam as unknown as TemplatePreviewRow;
+    const rules = (typedExam.exam_template_rules ?? []).sort((a, b) => a.position - b.position);
+    const topicBreakdown = rules.map((r) => ({
       name: r.topic?.name ?? "Tema",
-      count: r.question_count as number,
+      count: r.question_count,
     }));
-    const totalQuestions = topicBreakdown.reduce((sum: number, r: any) => sum + r.count, 0);
+    const totalQuestions = topicBreakdown.reduce((sum, r) => sum + r.count, 0);
 
     return {
       id: exam.id,
@@ -114,7 +209,7 @@ export const getTemplatePreview = createServerFn({ method: "GET" })
       description: exam.description,
       time_limit_min: exam.time_limit_min,
       passing_score: exam.passing_score,
-      university: (exam as any).university,
+      university: typedExam.university,
       points_correct: exam.points_correct,
       points_incorrect: exam.points_incorrect,
       points_empty: exam.points_empty,
@@ -147,12 +242,12 @@ export const getExamPreview = createServerFn({ method: "GET" })
     // El Map conserva el orden de inserción, así que el primer curso en
     // aparecer en `position` queda primero en el breakdown.
     const counts = new Map<string, number>();
-    (rows ?? []).forEach((r: any) => {
+    ((rows ?? []) as QuestionTopicRow[]).forEach((r) => {
       const name = r.exercise?.topic?.name ?? "Otros";
       counts.set(name, (counts.get(name) ?? 0) + 1);
     });
     const topicBreakdown = Array.from(counts.entries()).map(([name, count]) => ({ name, count }));
-    const questionCount = (exam as any).exam_questions?.[0]?.count ?? 0;
+    const questionCount = (exam as unknown as ExamPreviewRow).exam_questions?.[0]?.count ?? 0;
 
     return {
       ...exam,
@@ -303,8 +398,8 @@ export const startExamSession = createServerFn({ method: "POST" })
         .eq("user_id", userId)
         .eq("exam_id", exam.id);
       const seen = new Set<string>();
-      (priorSessions ?? []).forEach((s: any) => {
-        (s.question_ids ?? []).forEach((id: string) => seen.add(id));
+      ((priorSessions ?? []) as Pick<Tables<"exam_sessions">, "question_ids">[]).forEach((s) => {
+        (s.question_ids ?? []).forEach((id) => seen.add(id));
       });
 
       for (const rule of rules) {
@@ -321,8 +416,11 @@ export const startExamSession = createServerFn({ method: "POST" })
         if (rule.difficulty_filter) q = q.eq("difficulty", rule.difficulty_filter);
         const { data: pool, error: pErr } = await q;
         if (pErr) throw new Error(pErr.message);
-        const ids = (pool ?? []).map((e: any) => e.id as string);
-        const topicName = (pool ?? [])[0]?.topic?.name ?? "una materia";
+        const typedPool = (pool ?? []) as (Pick<Tables<"exercises">, "id"> & {
+          topic: Pick<Tables<"topics">, "name"> | null;
+        })[];
+        const ids = typedPool.map((e) => e.id);
+        const topicName = typedPool[0]?.topic?.name ?? "una materia";
         if (ids.length < rule.question_count) {
           throw new Error(
             `No hay suficientes preguntas de ${topicName} para generar este simulacro.`,
@@ -347,7 +445,9 @@ export const startExamSession = createServerFn({ method: "POST" })
         .eq("exam_id", exam.id)
         .order("position");
       if (eqErr) throw new Error(eqErr.message);
-      questionIds = (eqs ?? []).map((q: any) => q.exercise_id as string);
+      questionIds = ((eqs ?? []) as Pick<Tables<"exam_questions">, "exercise_id">[]).map(
+        (q) => q.exercise_id,
+      );
       if (questionIds.length === 0) throw new Error("El examen no tiene preguntas.");
       if (exam.question_order === "random") {
         questionIds = [...questionIds].sort(() => Math.random() - 0.5);
@@ -392,7 +492,7 @@ export const startRandomExamSession = createServerFn({ method: "POST" })
       .select("id")
       .eq("university_id", university.id);
     if (exError) throw new Error(exError.message);
-    const ids = (exercises ?? []).map((ex: any) => ex.id as string);
+    const ids = (exercises ?? []).map((ex) => ex.id);
     if (ids.length === 0)
       throw new Error("No hay ejercicios disponibles para generar el simulacro.");
 
@@ -431,16 +531,17 @@ export const getExamSession = createServerFn({ method: "GET" })
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!session) throw new Error("Sesión no encontrada");
+    const typedSession = session as unknown as ExamSessionWithExamRow;
 
-    const ids: string[] = (session.question_ids ?? []) as any;
-    let questions: any[] = [];
+    const ids = typedSession.question_ids ?? [];
+    let questions: ExerciseQuestionRow[] = [];
     if (ids.length) {
       const { data: exs } = await supabase
         .from("exercises")
         .select("id, statement_md, statement_image_path, choices, topic:topics(name)")
         .in("id", ids);
-      const byId = new Map((exs ?? []).map((e: any) => [e.id, e]));
-      questions = ids.map((id) => byId.get(id)).filter(Boolean);
+      const byId = new Map(((exs ?? []) as ExerciseQuestionRow[]).map((e) => [e.id, e]));
+      questions = ids.map((id) => byId.get(id)).filter((q): q is ExerciseQuestionRow => !!q);
     }
     return { session, questions };
   });
@@ -519,11 +620,12 @@ export const submitExamSession = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     if (!session) throw new Error("Sesión no encontrada");
     if (session.status !== "in_progress") {
-      return { score: session as any };
+      return { score: session };
     }
 
-    const finalAnswers: Record<string, number> = data.answers ?? (session.answers as any) ?? {};
-    const ids: string[] = (session.question_ids ?? []) as any;
+    const finalAnswers: Record<string, number> =
+      data.answers ?? (session.answers as unknown as Record<string, number>) ?? {};
+    const ids: string[] = session.question_ids ?? [];
 
     const [{ data: exs }, examPoints] = await Promise.all([
       supabase.from("exercises").select("id, correct_choice").in("id", ids),
@@ -545,7 +647,12 @@ export const submitExamSession = createServerFn({ method: "POST" })
         return FALLBACK_SCORING;
       })(),
     ]);
-    const correctMap = new Map((exs ?? []).map((e: any) => [e.id, e.correct_choice]));
+    const correctMap = new Map(
+      ((exs ?? []) as Pick<Tables<"exercises">, "id" | "correct_choice">[]).map((e) => [
+        e.id,
+        e.correct_choice,
+      ]),
+    );
 
     let correctCount = 0;
     let incorrectCount = 0;
@@ -621,7 +728,7 @@ export const listMyTemplateSessions = createServerFn({ method: "GET" })
       .not("exam_id", "is", null)
       .order("started_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return (rows ?? []).filter((r: any) => r.exam?.exam_type === "template");
+    return ((rows ?? []) as TemplateSessionRow[]).filter((r) => r.exam?.exam_type === "template");
   });
 
 export const getExamResult = createServerFn({ method: "GET" })
@@ -632,14 +739,15 @@ export const getExamResult = createServerFn({ method: "GET" })
     const { data: session, error } = await supabase
       .from("exam_sessions")
       .select(
-        "*, exam:exams(id, title, passing_score, points_correct, points_incorrect, points_empty)",
+        "*, exam:exams(id, title, time_limit_min, passing_score, points_correct, points_incorrect, points_empty)",
       )
       .eq("id", data.sessionId)
       .eq("user_id", userId)
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!session) throw new Error("Sesión no encontrada");
-    const ids: string[] = (session.question_ids ?? []) as any;
+    const typedSession = session as unknown as ExamResultSessionRow;
+    const ids = typedSession.question_ids ?? [];
     // exs/sessionAttempts/avgRows are three independent reads (none depends
     // on another's result) — previously exs was awaited alone before the
     // other two, an extra round-trip for nothing.
@@ -656,13 +764,15 @@ export const getExamResult = createServerFn({ method: "GET" })
         .eq("exam_session_id", data.sessionId),
       ids.length > 0
         ? supabase.rpc("get_exercise_avg_times", { _exercise_ids: ids })
-        : Promise.resolve({ data: [] as any[] }),
+        : Promise.resolve({ data: [] as { avg_time_ms: number; exercise_id: string }[] }),
     ]);
-    const byId = new Map((exs ?? []).map((e: any) => [e.id, e]));
+    const byId = new Map(((exs ?? []) as ExerciseResultRow[]).map((e) => [e.id, e]));
     const timeByQuestion = new Map(
-      (sessionAttempts ?? []).map((a: any) => [a.exercise_id, a.time_spent_ms]),
+      ((sessionAttempts ?? []) as Pick<Tables<"attempts">, "exercise_id" | "time_spent_ms">[]).map(
+        (a) => [a.exercise_id, a.time_spent_ms],
+      ),
     );
-    const avgByQuestion = new Map((avgRows ?? []).map((r: any) => [r.exercise_id, r.avg_time_ms]));
+    const avgByQuestion = new Map((avgRows ?? []).map((r) => [r.exercise_id, r.avg_time_ms]));
 
     const questions = ids
       .map((id) => {
@@ -674,6 +784,6 @@ export const getExamResult = createServerFn({ method: "GET" })
           avg_time_ms: base.expected_time_ms ?? avgByQuestion.get(id) ?? null,
         };
       })
-      .filter(Boolean);
-    return { session, questions };
+      .filter((q): q is NonNullable<typeof q> => q !== null);
+    return { session: typedSession, questions };
   });

@@ -66,14 +66,15 @@ function PanelPage() {
     // A student's own date (set in su perfil) always wins; otherwise fall back to the
     // university's own known exam date, so an admin updating it there automatically
     // updates the countdown for every student who hasn't overridden it themselves.
-    .map((u: any) => ({ ...u, effectiveExamDate: u.exam_date ?? u.university?.exam_date ?? null }))
-    .filter((u: any) => u.effectiveExamDate)
-    .map((u: any) => ({
+    .map((u) => ({ ...u, effectiveExamDate: u.exam_date ?? u.university?.exam_date ?? null }))
+    .filter((u) => u.effectiveExamDate)
+    .map((u) => ({
       id: u.id,
       name: u.university?.short_name ?? u.university?.name ?? "",
       examDate: u.effectiveExamDate as string,
       daysLeft: Math.ceil(
-        (new Date(u.effectiveExamDate).getTime() - new Date().setHours(0, 0, 0, 0)) / 86400000,
+        (new Date(u.effectiveExamDate as string).getTime() - new Date().setHours(0, 0, 0, 0)) /
+          86400000,
       ),
     }))
     .sort((a, b) => a.daysLeft - b.daysLeft);
@@ -82,7 +83,7 @@ function PanelPage() {
   // `universities` arriba (que solo incluye las que tienen fecha de examen,
   // para la cuenta regresiva), acá se listan todas las universidades
   // objetivo del estudiante tal cual, sin ese filtro.
-  const targetUniversities = (profileQ.data?.universities ?? []).map((u: any) => ({
+  const targetUniversities = (profileQ.data?.universities ?? []).map((u) => ({
     id: u.university_id as string,
     name: (u.university?.short_name ?? u.university?.name ?? "") as string,
   }));

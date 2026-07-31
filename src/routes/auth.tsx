@@ -43,9 +43,10 @@ function GoogleLogo({ className }: { className?: string }) {
   );
 }
 
-function translateAuthError(err: any): string {
-  const code: string | undefined = err?.code ?? err?.error_code;
-  const msg: string = err?.message ?? "";
+function translateAuthError(err: unknown): string {
+  const e = err as { code?: string; error_code?: string; message?: string } | null | undefined;
+  const code: string | undefined = e?.code ?? e?.error_code;
+  const msg: string = e?.message ?? "";
   const m = msg.toLowerCase();
 
   if (
@@ -175,7 +176,7 @@ function AuthPage() {
         if (error) throw error;
         navigate({ to: "/panel", replace: true });
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error("[auth]", err);
       const friendly = translateAuthError(err);
       setFormError(friendly);
@@ -222,7 +223,7 @@ function AuthPage() {
       });
       if (error || !data?.url) throw error ?? new Error("No se pudo iniciar sesión con Google.");
       url = data.url;
-    } catch (err: any) {
+    } catch (err) {
       popup.close();
       const friendly = translateAuthError(err);
       setFormError(friendly);

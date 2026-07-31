@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Timer, Shuffle, Play, ChevronDown, History, Lock, LogIn } from "lucide-react";
 import { listPublishedTemplates, listMyTemplateSessions } from "@/lib/exams.functions";
+type TemplateSession = Awaited<ReturnType<typeof listMyTemplateSessions>>[number];
 import { getFullProfile, listAllUniversities } from "@/lib/profile.functions";
 import { useSignedIn } from "@/hooks/use-signed-in";
 import { ExamAttemptRow } from "@/components/exam-attempt-row";
@@ -75,8 +76,8 @@ function SimulacrosPage() {
     }
   }, [profileQ.data, universityId, signedIn]);
 
-  const sessionsByExam = new Map<string, any[]>();
-  (sessionsQ.data ?? []).forEach((s: any) => {
+  const sessionsByExam = new Map<string, TemplateSession[]>();
+  (sessionsQ.data ?? []).forEach((s) => {
     if (!s.exam_id) return;
     if (!sessionsByExam.has(s.exam_id)) sessionsByExam.set(s.exam_id, []);
     sessionsByExam.get(s.exam_id)!.push(s);
@@ -123,8 +124,8 @@ function SimulacrosPage() {
             <SelectContent>
               <SelectItem value="all">Todas las universidades</SelectItem>
               {(universitiesQ.data ?? [])
-                .filter((u: any) => u.active)
-                .map((u: any) => (
+                .filter((u) => u.active)
+                .map((u) => (
                   <SelectItem key={u.id} value={u.id}>
                     {u.short_name ?? u.name}
                   </SelectItem>
@@ -167,7 +168,7 @@ function SimulacrosPage() {
       )}
 
       <div className="flex flex-col gap-4">
-        {(q.data ?? []).map((t: any, i: number) => {
+        {(q.data ?? []).map((t, i) => {
           const attempts = sessionsByExam.get(t.id) ?? [];
           const isExpanded = expandedHistory.has(t.id);
           const isUniTemplate = !!t.university;
@@ -251,14 +252,14 @@ function SimulacrosPage() {
                       Historial
                     </p>
                     <div className="space-y-2">
-                      {attempts.map((a: any) => (
+                      {attempts.map((a) => (
                         <ExamAttemptRow
                           key={a.id}
                           sessionId={a.id}
                           startedAt={a.started_at}
                           score={a.score}
                           maxScore={a.max_score}
-                          total={a.total}
+                          total={a.total ?? 0}
                           onDeleted={() => sessionsQ.refetch()}
                           compact
                         />

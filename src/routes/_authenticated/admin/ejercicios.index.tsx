@@ -60,12 +60,11 @@ function AdminExercisesList() {
     enabled: hasSearched,
   });
 
-  const allTopics: Array<{ id: string; name: string }> = (meta.data?.topics ?? []) as any;
-  const allUniversities: Array<{ id: string; short_name: string }> = (meta.data?.universities ??
-    []) as any;
+  const allTopics = meta.data?.topics ?? [];
+  const allUniversities = meta.data?.universities ?? [];
 
   const filtered = useMemo(() => {
-    return (q.data ?? []).filter((e: any) => {
+    return (q.data ?? []).filter((e) => {
       if (topicFilter !== "all" && e.topic?.id !== topicFilter) return false;
       if (universityFilter !== "all" && e.university?.id !== universityFilter) return false;
       if (yearFilter !== "all" && String(e.exam_year) !== yearFilter) return false;
@@ -85,8 +84,8 @@ function AdminExercisesList() {
       toast.success("Ejercicio eliminado");
       router.invalidate();
       q.refetch();
-    } catch (e: any) {
-      toast.error(e?.message ?? "Error");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Error");
     }
   }
 
@@ -95,8 +94,8 @@ function AdminExercisesList() {
     try {
       await reshuffleFn();
       toast.success("Reto del día actualizado");
-    } catch (e: any) {
-      toast.error(e?.message ?? "Error");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Error");
     } finally {
       setReshuffling(false);
     }
@@ -233,7 +232,7 @@ function AdminExercisesList() {
             )}
             {hasSearched &&
               !q.isLoading &&
-              filtered.map((ex: any) => (
+              filtered.map((ex) => (
                 <TableRow key={ex.id}>
                   <TableCell className="max-w-md">
                     <MathText text={ex.statement_md} clampLines={1} className="text-sm" />

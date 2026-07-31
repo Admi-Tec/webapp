@@ -1,6 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { Tables } from "@/integrations/supabase/types";
 import { z } from "zod";
+
+type StudentUniversityWithNameRow = Pick<Tables<"student_universities">, "exam_date"> & {
+  university: Pick<Tables<"universities">, "short_name"> | null;
+};
 
 export const listNotifications = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -73,7 +78,7 @@ export const regenerateNotifications = createServerFn({ method: "POST" })
     const inserts: Array<{ user_id: string; kind: string; title: string; body: string }> = [];
 
     // Countdown reminders (per uni)
-    (unis ?? []).forEach((u: any) => {
+    ((unis ?? []) as StudentUniversityWithNameRow[]).forEach((u) => {
       if (!u.exam_date) return;
       const daysLeft = Math.ceil(
         (new Date(u.exam_date).getTime() - Date.now()) / (24 * 3600 * 1000),

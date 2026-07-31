@@ -24,6 +24,10 @@ export const SOCIAL_LINKS = {
 } as const;
 export const SITE_DESCRIPTION =
   "Exámenes oficiales, simulacros ilimitados de todos tus cursos y ranking anónimo para tu admisión a la UNI, San Marcos, PUCP, UNALM y más.";
+// Google Analytics (GA4). Configura VITE_GA_MEASUREMENT_ID en .env / en el
+// entorno de deploy si алguna vez cambia de propiedad de GA — este valor es
+// el measurement ID real, no un placeholder.
+export const GA_MEASUREMENT_ID = import.meta.env.VITE_GA_MEASUREMENT_ID || "G-J9RTLWXKVS";
 
 export function absoluteUrl(path: string): string {
   return `${SITE_URL}${path.startsWith("/") ? path : `/${path}`}`;

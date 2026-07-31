@@ -48,7 +48,7 @@ function SearchPage() {
         )}
       </p>
       <div className="mt-6 grid gap-3 sm:grid-cols-2">
-        {results.map((ex: any) => (
+        {results.map((ex) => (
           <ExerciseCard key={ex.id} ex={ex} />
         ))}
       </div>

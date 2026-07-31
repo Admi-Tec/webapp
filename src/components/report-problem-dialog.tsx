@@ -21,7 +21,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { reportExercise } from "@/lib/exercise-feedback.functions";
+import { reportExercise, reportReasons } from "@/lib/exercise-feedback.functions";
+
+type ReportReason = (typeof reportReasons)[number];
 import { useSignedIn } from "@/hooks/use-signed-in";
 
 export const EXERCISE_REPORT_REASONS: Array<{ value: string; label: string }> = [
@@ -47,14 +49,17 @@ export function ReportProblemDialog({
 
   const m = useMutation({
     mutationFn: () =>
-      reportFn({ data: { exerciseId, reason: reason as any, note: note.trim() || undefined } }),
+      reportFn({
+        data: { exerciseId, reason: reason as ReportReason, note: note.trim() || undefined },
+      }),
     onSuccess: () => {
       toast.success("Gracias, revisaremos este ejercicio.");
       setOpen(false);
       setReason("");
       setNote("");
     },
-    onError: (e: any) => toast.error(e?.message ?? "No se pudo enviar el reporte"),
+    onError: (e: unknown) =>
+      toast.error(e instanceof Error ? e.message : "No se pudo enviar el reporte"),
   });
 
   if (!signedIn) return null;

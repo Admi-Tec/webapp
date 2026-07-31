@@ -32,7 +32,7 @@ export function FavoriteButton({
       qc.invalidateQueries({ queryKey: ["my-favorites"] });
       toast.success(r.favorited ? "Añadida a favoritas" : "Removida de favoritas");
     },
-    onError: (e: any) => toast.error(e?.message ?? "Error"),
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Error"),
   });
 
   if (!signedIn) return null;

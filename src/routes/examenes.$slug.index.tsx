@@ -144,7 +144,7 @@ function UniPage() {
               Aún no hay exámenes oficiales publicados para esta universidad.
             </div>
           ) : (
-            (exams ?? []).map((exam: any, i: number) => {
+            (exams ?? []).map((exam, i) => {
               const comingSoon = exam.questionCount === 0;
               return (
                 <div

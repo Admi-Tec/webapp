@@ -26,6 +26,8 @@ import {
   getTopicQuestionCounts,
 } from "@/lib/admin.functions";
 
+type BankExercise = Awaited<ReturnType<typeof listExerciseBank>>[number];
+
 type Status = "draft" | "published" | "archived";
 type Order = "fixed" | "random";
 type ExamType = "standard" | "template";
@@ -155,7 +157,7 @@ export function ExamForm({ initial }: { initial?: ExamFormValues }) {
 
   const bankTopics = useMemo(() => {
     const map = new Map<string, string>();
-    (bank.data ?? []).forEach((e: any) => {
+    (bank.data ?? []).forEach((e) => {
       if (e.topic?.id) map.set(e.topic.id, e.topic.name);
     });
     return Array.from(map, ([id, name]) => ({ id, name }));
@@ -163,7 +165,7 @@ export function ExamForm({ initial }: { initial?: ExamFormValues }) {
 
   const bankUniversities = useMemo(() => {
     const map = new Map<string, string>();
-    (bank.data ?? []).forEach((e: any) => {
+    (bank.data ?? []).forEach((e) => {
       if (e.university?.id) map.set(e.university.id, e.university.short_name);
     });
     return Array.from(map, ([id, short_name]) => ({ id, short_name }));
@@ -171,15 +173,14 @@ export function ExamForm({ initial }: { initial?: ExamFormValues }) {
 
   const bankYears = useMemo(() => {
     const years = new Set<number>();
-    (bank.data ?? []).forEach((e: any) => {
+    (bank.data ?? []).forEach((e) => {
       if (e.exam_year) years.add(e.exam_year);
     });
     return Array.from(years).sort((a, b) => b - a);
   }, [bank.data]);
 
-  const allTopics: Array<{ id: string; name: string }> = (meta.data?.topics ?? []) as any;
-  const allUniversities: Array<{ id: string; short_name: string; name: string }> = (meta.data
-    ?.universities ?? []) as any;
+  const allTopics = meta.data?.topics ?? [];
+  const allUniversities = meta.data?.universities ?? [];
 
   // Previously recomputed on every render (including keystrokes in unrelated
   // fields like title/description) by re-filtering/re-scanning the entire
@@ -187,7 +188,7 @@ export function ExamForm({ initial }: { initial?: ExamFormValues }) {
   // derivations above so it only re-runs when its actual inputs change.
   const available = useMemo(() => {
     const selectedSet = new Set(v.exercise_ids);
-    return (bank.data ?? []).filter((e: any) => {
+    return (bank.data ?? []).filter((e) => {
       if (selectedSet.has(e.id)) return false;
       if (topicFilter !== "all" && e.topic?.id !== topicFilter) return false;
       if (universityFilter !== "all" && e.university?.id !== universityFilter) return false;
@@ -200,8 +201,8 @@ export function ExamForm({ initial }: { initial?: ExamFormValues }) {
   const selectedItems = useMemo(
     () =>
       v.exercise_ids
-        .map((id) => (bank.data ?? []).find((e: any) => e.id === id))
-        .filter(Boolean) as any[],
+        .map((id) => (bank.data ?? []).find((e) => e.id === id))
+        .filter((e): e is BankExercise => !!e),
     [bank.data, v.exercise_ids],
   );
 
@@ -267,7 +268,7 @@ export function ExamForm({ initial }: { initial?: ExamFormValues }) {
   function availableFor(topicId: string, diff: Difficulty | null): number | null {
     const rows = availability.data ?? [];
     const match = rows.find(
-      (r: any) => r.topic_id === topicId && (r.difficulty_filter ?? null) === (diff ?? null),
+      (r) => r.topic_id === topicId && (r.difficulty_filter ?? null) === (diff ?? null),
     );
     return match ? match.count : null;
   }
@@ -337,8 +338,8 @@ export function ExamForm({ initial }: { initial?: ExamFormValues }) {
       }
       flashSaveFeedback("accepted");
       setTimeout(() => navigate({ to: "/admin/examenes" }), 550);
-    } catch (err: any) {
-      toast.error(err?.message ?? "Error al guardar");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Error al guardar");
       flashSaveFeedback("refused");
     } finally {
       setSaving(false);
@@ -778,7 +779,7 @@ export function ExamForm({ initial }: { initial?: ExamFormValues }) {
                 <p className="p-3 text-sm text-muted-foreground">Cargando…</p>
               ) : (
                 <>
-                  {available.map((e: any) => (
+                  {available.map((e) => (
                     <div
                       key={e.id}
                       className="flex items-center gap-2 rounded-md border border-border bg-card p-3"

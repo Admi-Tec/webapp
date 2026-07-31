@@ -54,8 +54,8 @@ function TakeExam() {
   const [grading, setGrading] = useState(false);
   const savedRef = useRef({ answers: "", flagged: "" });
 
-  const session = q.data?.session as any | undefined;
-  const questions: any[] = useMemo(() => q.data?.questions ?? [], [q.data?.questions]);
+  const session = q.data?.session;
+  const questions = useMemo(() => q.data?.questions ?? [], [q.data?.questions]);
 
   // Per-question time tracking: accumulate elapsed ms per exercise id as the student navigates.
   const timeSpentRef = useRef<Record<string, number>>({});
@@ -73,14 +73,13 @@ function TakeExam() {
   useEffect(() => {
     flushActiveSegment();
     activeSegmentRef.current = { exerciseId: currentExerciseId ?? null, startedAt: Date.now() };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentExerciseId]);
 
   // Init from session
   useEffect(() => {
     if (!session) return;
-    setAnswers((session.answers as any) ?? {});
-    setFlagged(new Set((session.flagged as any) ?? []));
+    setAnswers((session.answers as unknown as Record<string, number>) ?? {});
+    setFlagged(new Set((session.flagged as unknown as string[]) ?? []));
     const timeLimitMs = (session.time_limit_min ?? 60) * 60 * 1000;
     const elapsed = Date.now() - new Date(session.started_at).getTime();
     setSecondsLeft(Math.max(0, Math.floor((timeLimitMs - elapsed) / 1000)));
@@ -138,8 +137,8 @@ function TakeExam() {
       }
 
       navigate({ to: "/examen-sesion/$sessionId/resultado", params: { sessionId }, replace: true });
-    } catch (e: any) {
-      toast.error(e?.message ?? "Error al enviar");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Error al enviar");
       setSubmitting(false);
       setGrading(false);
     }

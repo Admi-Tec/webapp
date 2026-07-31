@@ -63,8 +63,12 @@ export const getExamMinScore = createServerFn({ method: "POST" })
       .eq("user_id", context.userId)
       .eq("university_id", universityId)
       .maybeSingle();
-    const careerId = su?.career_id ?? null;
-    const careerName = (su?.career as any)?.name ?? null;
+    const typedSu = su as unknown as {
+      career_id: string | null;
+      career: { name: string } | null;
+    } | null;
+    const careerId = typedSu?.career_id ?? null;
+    const careerName = typedSu?.career?.name ?? null;
     if (!careerId) return { minScore: null, careerName: null };
 
     const { data: row, error } = await context.supabase

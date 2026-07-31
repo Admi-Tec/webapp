@@ -74,7 +74,7 @@ function ExamsList() {
         </div>
       )}
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {exams.map((e: any, i: number) => {
+        {exams.map((e, i) => {
           const comingSoon = e.questionCount === 0;
           return (
             <div

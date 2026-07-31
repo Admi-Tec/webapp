@@ -100,7 +100,7 @@ function ExercisePage() {
   // Load sibling exercise ids in same topic for prev/next
   useEffect(() => {
     if (!ex?.topic?.slug) return;
-    listExercises({ data: { topicSlug: ex.topic.slug, limit: 100 } }).then((rows: any[]) => {
+    listExercises({ data: { topicSlug: ex.topic.slug, limit: 100 } }).then((rows) => {
       setSiblings(rows.map((r) => r.id));
     });
   }, [ex?.topic?.slug]);
@@ -132,8 +132,8 @@ function ExercisePage() {
         },
       });
       setSubmitted({ correct: res.isCorrect, correctChoice: res.correctChoice });
-    } catch (e: any) {
-      toast.error(e.message ?? "No se pudo registrar el intento");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudo registrar el intento");
     }
   }
 

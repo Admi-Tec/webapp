@@ -41,7 +41,7 @@ function RankingPage() {
   });
 
   const examRows = examBoardQ.data ?? [];
-  const examMe = examRows.find((r: any) => r.is_me);
+  const examMe = examRows.find((r) => r.is_me);
   const examTotal = examRows[0]?.total_count ?? 0;
 
   // The leaderboard RPC filters out anyone with leaderboard_opt_in=false or
@@ -68,7 +68,7 @@ function RankingPage() {
           <SelectValue placeholder="Selecciona un examen" />
         </SelectTrigger>
         <SelectContent>
-          {(examsQ.data ?? []).map((e: any) => (
+          {(examsQ.data ?? []).map((e) => (
             <SelectItem key={e.id} value={e.id}>
               {e.title}
               {e.university ? ` — ${e.university.short_name}` : ""}
@@ -185,8 +185,8 @@ function RankingPage() {
             ) : (
               <BoardTable
                 rows={examRows
-                  .filter((r: any) => r.rank <= 100)
-                  .map((r: any) => ({
+                  .filter((r) => r.rank <= 100)
+                  .map((r) => ({
                     rank: r.rank,
                     pseudonym: r.pseudonym,
                     scoreText: `${r.best_score}${r.max_score != null ? ` / ${r.max_score}` : ""} pts`,

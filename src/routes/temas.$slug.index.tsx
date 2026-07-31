@@ -166,7 +166,7 @@ function TopicPage() {
     enabled: signedIn === true,
   });
   const targetUniversities = (profileQ.data?.universities ?? [])
-    .map((u: any) => u.university)
+    .map((u) => u.university)
     .filter(Boolean);
 
   const [selectedUniversityId, setSelectedUniversityId] = useState<string>("");
@@ -206,9 +206,9 @@ function TopicPage() {
   const hasTargetUniversity = targetUniversities.length > 0;
   const subtopicsRanked = hasTargetUniversity
     ? [...topic.subtopics]
-        .map((s: any) => ({ ...s, count: freqMap[s.id] ?? 0 }))
+        .map((s) => ({ ...s, count: freqMap[s.id] ?? 0 }))
         .sort((a, b) => b.count - a.count || a.order - b.order)
-    : topic.subtopics.map((s: any) => ({ ...s, count: 0 }));
+    : topic.subtopics.map((s) => ({ ...s, count: 0 }));
   const topFrequentIds = new Set(
     subtopicsRanked
       .filter((s) => s.count > 0)
@@ -306,7 +306,7 @@ function TopicPage() {
                 <SelectValue placeholder="Universidad" />
               </SelectTrigger>
               <SelectContent>
-                {targetUniversities.map((u: any) => (
+                {targetUniversities.map((u) => (
                   <SelectItem key={u.id} value={u.id}>
                     Frecuencia para: {u.short_name}
                   </SelectItem>
@@ -406,7 +406,7 @@ function TopicPage() {
           ) : (
             <>
               <div className="grid gap-3 sm:grid-cols-2">
-                {exercises.map((ex: any, i: number) => (
+                {exercises.map((ex, i) => (
                   <div
                     key={ex.id}
                     className="animate-fade-up"

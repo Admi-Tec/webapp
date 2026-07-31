@@ -11,6 +11,7 @@ import {
 } from "@/lib/profile.functions";
 import { listTopics } from "@/lib/exercises.functions";
 import { listCareersForUniversities } from "@/lib/careers.functions";
+import type { Tables } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -55,6 +56,9 @@ export const Route = createFileRoute("/_authenticated/perfil")({
 });
 
 type UniRow = { universityId: string; examDate: string; careerId: string | null };
+type PrepTime = (typeof PREP_TIME_VALUES)[number];
+type PrepMethod = (typeof PREP_METHOD_VALUES)[number];
+type CareerRow = Pick<Tables<"careers">, "id" | "name" | "active" | "university_id">;
 
 function PerfilPage() {
   const fetchProfile = useServerFn(getFullProfile);
@@ -78,7 +82,7 @@ function PerfilPage() {
   const allTopics = topicsQ.data ?? [];
 
   const [universities, setUniversities] = useState<UniRow[]>(
-    (data?.universities ?? []).map((u: any) => ({
+    (data?.universities ?? []).map((u) => ({
       universityId: u.university_id,
       examDate: u.exam_date ?? "",
       careerId: u.career_id ?? null,
@@ -90,8 +94,8 @@ function PerfilPage() {
     queryFn: () => careersFn({ data: { universityIds } }),
     enabled: universityIds.length > 0,
   });
-  const careersByUniversity = new Map<string, any[]>();
-  (careersQ.data ?? []).forEach((c: any) => {
+  const careersByUniversity = new Map<string, CareerRow[]>();
+  (careersQ.data ?? []).forEach((c) => {
     const list = careersByUniversity.get(c.university_id) ?? [];
     list.push(c);
     careersByUniversity.set(c.university_id, list);
@@ -105,8 +109,10 @@ function PerfilPage() {
     p0?.weekly_goal_questions ?? 50,
   );
   const [weeklyGoalExams, setWeeklyGoalExams] = useState<number | "">(p0?.weekly_goal_exams ?? 2);
-  const [prepTime, setPrepTime] = useState<string | null>(p0?.prep_time ?? null);
-  const [prepMethod, setPrepMethod] = useState<string | null>(p0?.prep_method ?? null);
+  const [prepTime, setPrepTime] = useState<PrepTime | null>((p0?.prep_time as PrepTime) ?? null);
+  const [prepMethod, setPrepMethod] = useState<PrepMethod | null>(
+    (p0?.prep_method as PrepMethod) ?? null,
+  );
   const [weeklyStudyHours, setWeeklyStudyHours] = useState<string>(
     p0?.weekly_study_hours != null ? String(p0.weekly_study_hours) : "",
   );
@@ -167,8 +173,8 @@ function PerfilPage() {
       setCurrentPassword("");
       setNewPassword("");
       setConfirmNewPassword("");
-    } catch (err: any) {
-      const friendly = err?.message ?? "No se pudo cambiar la contraseña.";
+    } catch (err) {
+      const friendly = err instanceof Error ? err.message : "No se pudo cambiar la contraseña.";
       setPasswordError(friendly);
       toast.error(friendly);
       flashPasswordFeedback("refused");
@@ -183,7 +189,7 @@ function PerfilPage() {
 
   function addUniversityRow() {
     const used = new Set(universities.map((u) => u.universityId));
-    const next = allUniversities.find((u: any) => u.active && !used.has(u.id));
+    const next = allUniversities.find((u) => u.active && !used.has(u.id));
     if (!next) {
       toast.error("Ya agregaste todas las universidades disponibles");
       return;
@@ -224,8 +230,8 @@ function PerfilPage() {
           leaderboardOptIn,
           weeklyGoalQuestions: weeklyGoalQuestions === "" ? 50 : weeklyGoalQuestions,
           weeklyGoalExams: weeklyGoalExams === "" ? 2 : weeklyGoalExams,
-          prepTime: prepTime as any,
-          prepMethod: prepMethod as any,
+          prepTime,
+          prepMethod,
           weeklyStudyHours: weeklyStudyHours ? Number(weeklyStudyHours) : null,
           initialWeakTopicIds: weakTopicIds,
           universities: universities.map((u) => ({
@@ -238,9 +244,9 @@ function PerfilPage() {
       await queryClient.invalidateQueries({ queryKey: ["full-profile"] });
       toast.success("Perfil actualizado");
       flashSaveFeedback("accepted");
-    } catch (err: any) {
+    } catch (err) {
       console.error("No se pudo guardar el perfil:", err);
-      toast.error(err?.message || "Error al guardar");
+      toast.error(err instanceof Error ? err.message : "Error al guardar");
       flashSaveFeedback("refused");
     } finally {
       setBusy(false);
@@ -366,7 +372,7 @@ function PerfilPage() {
             )}
             {universities.map((row, i) => {
               const rowCareers = (careersByUniversity.get(row.universityId) ?? []).filter(
-                (c: any) => c.active || c.id === row.careerId,
+                (c) => c.active || c.id === row.careerId,
               );
               return (
                 <div
@@ -384,8 +390,8 @@ function PerfilPage() {
                     </SelectTrigger>
                     <SelectContent>
                       {allUniversities
-                        .filter((u: any) => u.active || u.id === row.universityId)
-                        .map((u: any) => (
+                        .filter((u) => u.active || u.id === row.universityId)
+                        .map((u) => (
                           <SelectItem key={u.id} value={u.id}>
                             {u.short_name ?? u.name}
                             {!u.active ? " (inactiva)" : ""}
@@ -411,7 +417,7 @@ function PerfilPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="__none">— ninguna —</SelectItem>
-                      {rowCareers.map((c: any) => (
+                      {rowCareers.map((c) => (
                         <SelectItem key={c.id} value={c.id}>
                           {c.name}
                         </SelectItem>
@@ -455,7 +461,7 @@ function PerfilPage() {
               </Label>
               <Select
                 value={prepTime ?? "__none"}
-                onValueChange={(v) => setPrepTime(v === "__none" ? null : v)}
+                onValueChange={(v) => setPrepTime(v === "__none" ? null : (v as PrepTime))}
               >
                 <SelectTrigger id="prep-time">
                   <SelectValue placeholder="Sin definir" />
@@ -477,7 +483,7 @@ function PerfilPage() {
               </Label>
               <Select
                 value={prepMethod ?? "__none"}
-                onValueChange={(v) => setPrepMethod(v === "__none" ? null : v)}
+                onValueChange={(v) => setPrepMethod(v === "__none" ? null : (v as PrepMethod))}
               >
                 <SelectTrigger id="prep-method">
                   <SelectValue placeholder="Sin definir" />
@@ -514,7 +520,7 @@ function PerfilPage() {
                 ¿En qué cursos sientes que necesitas más refuerzo?
               </Label>
               <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {allTopics.map((t: any) => (
+                {allTopics.map((t) => (
                   <label
                     key={t.id}
                     className="flex cursor-pointer items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm hover:border-primary/40"

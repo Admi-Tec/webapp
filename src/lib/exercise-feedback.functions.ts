@@ -49,7 +49,7 @@ export const rateExercise = createServerFn({ method: "POST" })
     return { stars: data.stars };
   });
 
-const reportReasons = [
+export const reportReasons = [
   "respuesta_incorrecta",
   "enunciado_confuso",
   "falta_informacion",

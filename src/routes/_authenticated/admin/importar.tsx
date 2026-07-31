@@ -41,10 +41,22 @@ import {
   type ParsedExercise,
   type ParsedDifficulty,
 } from "@/lib/markdown-exercise-parser";
+import type { Tables } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/admin/importar")({
   component: AdminImportExercises,
 });
+
+type AdminTopic = Pick<Tables<"topics">, "id" | "name" | "slug" | "active" | "color">;
+type AdminSubtopic = Pick<Tables<"subtopics">, "id" | "name" | "topic_id">;
+type AdminUniversity = Pick<Tables<"universities">, "id" | "short_name" | "name" | "active">;
+
+// Non-standard attributes for a folder-picker <input type="file">, unsupported
+// by React's HTMLAttributes typings but honored by Chromium-based browsers.
+type DirectoryInputAttrs = React.InputHTMLAttributes<HTMLInputElement> & {
+  webkitdirectory?: string;
+  directory?: string;
+};
 
 type Override = {
   topicId?: string | null;
@@ -84,7 +96,7 @@ interface ResolvedRow extends ParsedExercise {
   tags: string[];
   statementImageFile: File | null;
   solutionImageFile: File | null;
-  subtopicsForTopic: any[];
+  subtopicsForTopic: AdminSubtopic[];
   blockingErrors: string[];
   warnings: string[];
   isValid: boolean;
@@ -107,7 +119,9 @@ function findImageFile(files: File[], refPath: string | null): File | null {
   const norm = refPath.replace(/^\.?\//, "").toLowerCase();
   const base = norm.split("/").pop()!;
   const bySuffix = files.find((f) => {
-    const rel = ((f as any).webkitRelativePath || f.name).toLowerCase();
+    const rel = (
+      (f as File & { webkitRelativePath?: string }).webkitRelativePath || f.name
+    ).toLowerCase();
     return rel.endsWith(norm);
   });
   if (bySuffix) return bySuffix;
@@ -123,7 +137,7 @@ function AdminImportExercises() {
   // Only standard exams have a fixed question list; template exams generate
   // questions per attempt from rules, so there's nothing to append to.
   const standardExams = (exams.data ?? []).filter(
-    (e: any) => (e.exam_type ?? "standard") === "standard" && e.status !== "archived",
+    (e) => (e.exam_type ?? "standard") === "standard" && e.status !== "archived",
   );
 
   const folderInputRef = useRef<HTMLInputElement>(null);
@@ -157,8 +171,8 @@ function AdminImportExercises() {
         res.duplicated ? `El curso "${name}" ya existía — aplicado.` : `Curso "${name}" creado.`,
       );
       await meta.refetch();
-    } catch (e: any) {
-      toast.error(e?.message ?? "No se pudo crear el curso");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudo crear el curso");
     } finally {
       setCreatingNames((s) => {
         const n = new Set(s);
@@ -178,8 +192,8 @@ function AdminImportExercises() {
         res.duplicated ? `El tema "${name}" ya existía — aplicado.` : `Tema "${name}" creado.`,
       );
       await meta.refetch();
-    } catch (e: any) {
-      toast.error(e?.message ?? "No se pudo crear el tema");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudo crear el tema");
     } finally {
       setCreatingNames((s) => {
         const n = new Set(s);
@@ -213,24 +227,24 @@ function AdminImportExercises() {
 
       const topicMatch = p.frontmatter.tema
         ? (meta.data.topics.find(
-            (t: any) => normalizeForMatch(t.name) === normalizeForMatch(p.frontmatter.tema!),
+            (t) => normalizeForMatch(t.name) === normalizeForMatch(p.frontmatter.tema!),
           ) ?? null)
         : null;
       const topicId = o.topicId !== undefined ? o.topicId : (topicMatch?.id ?? null);
 
       const subtopicsForTopic = topicId
-        ? meta.data.subtopics.filter((s: any) => s.topic_id === topicId)
+        ? meta.data.subtopics.filter((s) => s.topic_id === topicId)
         : [];
       const subtopicMatch = p.frontmatter.subtema
         ? (subtopicsForTopic.find(
-            (s: any) => normalizeForMatch(s.name) === normalizeForMatch(p.frontmatter.subtema!),
+            (s) => normalizeForMatch(s.name) === normalizeForMatch(p.frontmatter.subtema!),
           ) ?? null)
         : null;
       const subtopicId = o.subtopicId !== undefined ? o.subtopicId : (subtopicMatch?.id ?? null);
 
       const universityMatch = p.frontmatter.universidad
         ? (meta.data.universities.find(
-            (u: any) =>
+            (u) =>
               u.active &&
               (normalizeForMatch(u.name) === normalizeForMatch(p.frontmatter.universidad!) ||
                 normalizeForMatch(u.short_name) === normalizeForMatch(p.frontmatter.universidad!)),
@@ -390,8 +404,8 @@ function AdminImportExercises() {
       } else {
         toast.warning(`${result.insertedCount} importado(s), ${result.failed.length} con errores.`);
       }
-    } catch (e: any) {
-      toast.error(e?.message ?? "Error al importar");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Error al importar");
     } finally {
       setImporting(false);
     }
@@ -421,7 +435,7 @@ function AdminImportExercises() {
           type="file"
           multiple
           className="hidden"
-          {...({ webkitdirectory: "", directory: "" } as any)}
+          {...({ webkitdirectory: "", directory: "" } as DirectoryInputAttrs)}
           onChange={(e) => handleFilesSelected(e.target.files)}
         />
         <input
@@ -456,7 +470,7 @@ function AdminImportExercises() {
             {importResult.insertedCount} ejercicio(s) importado(s) correctamente
             {importResult.linkedToExamCount
               ? `, ${importResult.linkedToExamCount} agregado(s) al examen "${
-                  standardExams.find((e: any) => e.id === examId)?.title ?? ""
+                  standardExams.find((e) => e.id === examId)?.title ?? ""
                 }"`
               : ""}
             {importResult.failed.length > 0 ? `, ${importResult.failed.length} con errores` : ""}.
@@ -507,7 +521,7 @@ function AdminImportExercises() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__none">— ninguno (solo al banco) —</SelectItem>
-                  {standardExams.map((e: any) => (
+                  {standardExams.map((e) => (
                     <SelectItem key={e.id} value={e.id}>
                       {e.title} · {e.questionCount} pregunta(s)
                       {e.status === "draft" ? " · borrador" : ""}
@@ -587,8 +601,8 @@ function ImportRowCard({
   creatingSubtopic,
 }: {
   row: ResolvedRow;
-  topics: any[];
-  universities: any[];
+  topics: AdminTopic[];
+  universities: AdminUniversity[];
   onOverride: (patch: Override) => void;
   onQuickCreateTopic: () => void;
   onQuickCreateSubtopic: () => void;
@@ -674,7 +688,7 @@ function ImportRowCard({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="__none">— ninguno —</SelectItem>
-              {row.subtopicsForTopic.map((s: any) => (
+              {row.subtopicsForTopic.map((s) => (
                 <SelectItem key={s.id} value={s.id}>
                   {s.name}
                 </SelectItem>
@@ -710,7 +724,7 @@ function ImportRowCard({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="__none">Genérico — todas las universidades</SelectItem>
-              {universities.map((u: any) => (
+              {universities.map((u) => (
                 <SelectItem key={u.id} value={u.id}>
                   {u.short_name}
                   {u.active === false ? " (inactiva)" : ""}

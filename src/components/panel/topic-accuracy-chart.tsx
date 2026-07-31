@@ -11,6 +11,7 @@ import {
   YAxis,
   Tooltip,
   LabelList,
+  type LabelProps,
 } from "recharts";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft, ArrowUp, ArrowDown, ListFilter } from "lucide-react";
@@ -145,14 +146,14 @@ function sortBars(bars: Bar_[], sortBy: SortBy): Bar_[] {
 // Etiqueta custom sobre la barra "Mi precisión" con la flecha de tendencia
 // (punto 6 del plan) — texto SVG simple en vez de un ícono, para no lidiar
 // con <svg> anidado dentro del <svg> del propio chart.
-function TrendLabel(props: any) {
-  const { x, y, width, value } = props;
+function TrendLabel(props: LabelProps) {
+  const { x = 0, y = 0, width = 0, value } = props;
   if (!value || value === "flat") return null;
   const up = value === "up";
   return (
     <text
-      x={x + width / 2}
-      y={y - 6}
+      x={Number(x) + Number(width) / 2}
+      y={Number(y) - 6}
       textAnchor="middle"
       fontSize={11}
       fontWeight={700}
@@ -168,13 +169,13 @@ function TrendLabel(props: any) {
 // promedio es 0%", que es información distinta y engañosa. Para un valor
 // real no dibuja nada (la barra gris ya lo comunica); solo entra cuando no
 // hay dato.
-function NoAvgDataLabel(props: any) {
-  const { x, y, width, value } = props;
+function NoAvgDataLabel(props: LabelProps) {
+  const { x = 0, y = 0, width = 0, value } = props;
   if (value !== null && value !== undefined) return null;
   return (
     <text
-      x={x + width / 2}
-      y={y - 4}
+      x={Number(x) + Number(width) / 2}
+      y={Number(y) - 4}
       textAnchor="middle"
       fontSize={9}
       fill="var(--color-muted-foreground)"
@@ -489,7 +490,9 @@ export function TopicAccuracyChart({
               <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
               <XAxis dataKey="name" tick={{ fontSize: 11 }} />
               <YAxis domain={[0, 100]} unit="%" tick={{ fontSize: 11 }} />
-              <Tooltip formatter={(value: any) => (value === null ? "Sin datos" : `${value}%`)} />
+              <Tooltip
+                formatter={(value: unknown) => (value === null ? "Sin datos" : `${value}%`)}
+              />
               <Bar
                 dataKey="accuracy"
                 name="Tu precisión"

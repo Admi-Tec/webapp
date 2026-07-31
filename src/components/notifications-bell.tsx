@@ -50,7 +50,9 @@ export function NotificationsBell() {
       try {
         await regenFn();
         qc.invalidateQueries({ queryKey: ["notifications"] });
-      } catch {}
+      } catch {
+        // Best-effort regeneration — if it fails, the bell just shows whatever's already cached.
+      }
     }
   }
 

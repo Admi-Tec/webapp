@@ -31,7 +31,7 @@ export function ExerciseRating({
       qc.invalidateQueries({ queryKey: ["my-exercise-rating", exerciseId] });
       toast.success("¡Gracias por tu calificación!");
     },
-    onError: (e: any) => toast.error(e?.message ?? "No se pudo calificar"),
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "No se pudo calificar"),
   });
 
   if (!signedIn) return null;

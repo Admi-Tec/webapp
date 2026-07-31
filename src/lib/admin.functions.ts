@@ -1,8 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { Database, Tables } from "@/integrations/supabase/types";
 import { z } from "zod";
 
-async function assertAdmin(context: { supabase: any; userId: string }) {
+type AdminSupabaseClient = SupabaseClient<Database>;
+
+async function assertAdmin(context: { supabase: AdminSupabaseClient; userId: string }) {
   const { data, error } = await context.supabase.rpc("has_role", {
     _user_id: context.userId,
     _role: "admin",
@@ -16,7 +20,7 @@ async function assertAdmin(context: { supabase: any; userId: string }) {
 // `.update()`/`.delete()` can "succeed" (no `error`) while touching nothing.
 // Every write below chains `.select(...)` and checks this so a no-op is
 // surfaced to the admin instead of a false "guardado" toast.
-function assertRowsAffected(rows: any[] | null | undefined, entity: string) {
+function assertRowsAffected(rows: unknown[] | null | undefined, entity: string) {
   if (!rows || rows.length === 0) {
     throw new Error(
       `No se pudo guardar ${entity}: no se encontró el registro o no tienes permiso.`,
@@ -262,7 +266,7 @@ export const bulkImportExercises = createServerFn({ method: "POST" })
       const { data: linked, error: linkErr } = await context.supabase
         .from("exam_questions")
         .insert(
-          rows.map((r: any, i: number) => ({
+          (rows as Pick<Tables<"exercises">, "id">[]).map((r, i) => ({
             exam_id: examId,
             exercise_id: r.id,
             position: startPos + i,
@@ -348,17 +352,28 @@ export const listAdminTopics = createServerFn({ method: "GET" })
     if (subtopicsRes.error) throw new Error(subtopicsRes.error.message);
     const topicCounts = new Map<string, number>();
     const subtopicCounts = new Map<string, number>();
-    (countsRes.data ?? []).forEach((r: any) => {
-      topicCounts.set(r.topic_id, (topicCounts.get(r.topic_id) ?? 0) + 1);
-      if (r.subtopic_id)
-        subtopicCounts.set(r.subtopic_id, (subtopicCounts.get(r.subtopic_id) ?? 0) + 1);
-    });
-    return (data ?? []).map((t: any) => ({
+    ((countsRes.data ?? []) as Pick<Tables<"exercises">, "topic_id" | "subtopic_id">[]).forEach(
+      (r) => {
+        topicCounts.set(r.topic_id, (topicCounts.get(r.topic_id) ?? 0) + 1);
+        if (r.subtopic_id)
+          subtopicCounts.set(r.subtopic_id, (subtopicCounts.get(r.subtopic_id) ?? 0) + 1);
+      },
+    );
+    const subtopicRows = (subtopicsRes.data ?? []) as Pick<
+      Tables<"subtopics">,
+      "id" | "name" | "topic_id"
+    >[];
+    return (
+      (data ?? []) as Pick<
+        Tables<"topics">,
+        "id" | "name" | "slug" | "description" | "color" | "active" | "order"
+      >[]
+    ).map((t) => ({
       ...t,
       exerciseCount: topicCounts.get(t.id) ?? 0,
-      subtopics: (subtopicsRes.data ?? [])
-        .filter((s: any) => s.topic_id === t.id)
-        .map((s: any) => ({
+      subtopics: subtopicRows
+        .filter((s) => s.topic_id === t.id)
+        .map((s) => ({
           id: s.id,
           name: s.name,
           exerciseCount: subtopicCounts.get(s.id) ?? 0,
@@ -616,16 +631,28 @@ export const listAdminUniversities = createServerFn({ method: "GET" })
 
     const bump = (m: Map<string, number>, key: string) => m.set(key, (m.get(key) ?? 0) + 1);
     const studentCounts = new Map<string, number>();
-    (studentRows ?? []).forEach((r: any) => bump(studentCounts, r.university_id));
+    ((studentRows ?? []) as Pick<Tables<"student_universities">, "university_id">[]).forEach((r) =>
+      bump(studentCounts, r.university_id),
+    );
     const officialExamCounts = new Map<string, number>();
     const templateCounts = new Map<string, number>();
-    (examRows ?? []).forEach((r: any) =>
-      bump(r.exam_type === "template" ? templateCounts : officialExamCounts, r.university_id),
+    ((examRows ?? []) as Pick<Tables<"exams">, "university_id" | "exam_type">[]).forEach((r) =>
+      bump(
+        r.exam_type === "template" ? templateCounts : officialExamCounts,
+        r.university_id as string,
+      ),
     );
     const exerciseCounts = new Map<string, number>();
-    (exerciseRows ?? []).forEach((r: any) => bump(exerciseCounts, r.university_id));
+    ((exerciseRows ?? []) as Pick<Tables<"exercises">, "university_id">[]).forEach((r) =>
+      bump(exerciseCounts, r.university_id as string),
+    );
 
-    return (data ?? []).map((u: any) => ({
+    return (
+      (data ?? []) as Pick<
+        Tables<"universities">,
+        "id" | "name" | "short_name" | "slug" | "description" | "logo_path" | "exam_date" | "active"
+      >[]
+    ).map((u) => ({
       ...u,
       studentCount: studentCounts.get(u.id) ?? 0,
       examCount: officialExamCounts.get(u.id) ?? 0,
@@ -800,12 +827,16 @@ export const listAdminCareers = createServerFn({ method: "GET" })
       m.set(key, (m.get(key) ?? 0) + 1);
     };
     const studentCounts = new Map<string, number>();
-    (studentRows ?? []).forEach((r: any) => bump(studentCounts, r.career_id));
+    ((studentRows ?? []) as Pick<Tables<"student_universities">, "career_id">[]).forEach((r) =>
+      bump(studentCounts, r.career_id),
+    );
 
-    return (rows ?? []).map((c: any) => ({
-      ...c,
-      studentCount: studentCounts.get(c.id) ?? 0,
-    }));
+    return ((rows ?? []) as Pick<Tables<"careers">, "id" | "name" | "active" | "created_at">[]).map(
+      (c) => ({
+        ...c,
+        studentCount: studentCounts.get(c.id) ?? 0,
+      }),
+    );
   });
 
 export const createCareer = createServerFn({ method: "POST" })
@@ -926,7 +957,7 @@ export const listAdminMinScores = createServerFn({ method: "GET" })
 // needs the service-role client (same pattern as resolveExerciseReport in
 // exercise-review.functions.ts).
 async function notifyMinScoreUpdate(
-  supabase: any,
+  supabase: AdminSupabaseClient,
   ids: { universityId: string; examId: string; careerId: string },
   minScore: number,
 ) {
@@ -939,7 +970,11 @@ async function notifyMinScoreUpdate(
       .eq("exam_id", ids.examId)
       .in("status", ["submitted", "graded"]),
   ]);
-  const affected = [...new Set<string>((sessions ?? []).map((s: any) => s.user_id as string))];
+  const affected = [
+    ...new Set<string>(
+      ((sessions ?? []) as Pick<Tables<"exam_sessions">, "user_id">[]).map((s) => s.user_id),
+    ),
+  ];
   if (affected.length === 0) return;
   const scopeLabel = [exam?.title, career?.name].filter(Boolean).join(" — ") || "tu perfil";
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -960,7 +995,7 @@ const minScoreFields = z.object({
 });
 
 async function assertNoDuplicateMinScore(
-  context: { supabase: any },
+  context: { supabase: AdminSupabaseClient },
   ids: { universityId: string; examId: string; careerId: string },
   excludeId?: string,
 ) {
@@ -1091,8 +1126,12 @@ const examUpdateSchema = z.object({
 });
 
 async function validateTemplateRules(
-  supabase: any,
-  rules: Array<{ topic_id: string; difficulty_filter?: string | null; question_count: number }>,
+  supabase: AdminSupabaseClient,
+  rules: Array<{
+    topic_id: string;
+    difficulty_filter?: Database["public"]["Enums"]["difficulty"] | null;
+    question_count: number;
+  }>,
   universityId: string,
 ) {
   for (const rule of rules) {
@@ -1128,14 +1167,19 @@ export const listAdminExams = createServerFn({ method: "GET" })
       )
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return (data ?? []).map((e: any) => ({
+    type AdminExamListRow = Pick<
+      Tables<"exams">,
+      "id" | "title" | "status" | "exam_type" | "time_limit_min" | "created_at"
+    > & {
+      exam_questions: { count: number }[] | null;
+      exam_template_rules: { question_count: number }[] | null;
+      exam_sessions: { count: number }[] | null;
+    };
+    return ((data ?? []) as AdminExamListRow[]).map((e) => ({
       ...e,
       questionCount:
         (e.exam_type ?? "standard") === "template"
-          ? (e.exam_template_rules ?? []).reduce(
-              (sum: number, r: any) => sum + (r.question_count ?? 0),
-              0,
-            )
+          ? (e.exam_template_rules ?? []).reduce((sum, r) => sum + (r.question_count ?? 0), 0)
           : (e.exam_questions?.[0]?.count ?? 0),
       attemptCount: e.exam_sessions?.[0]?.count ?? 0,
     }));
@@ -1159,12 +1203,22 @@ export const getAdminExam = createServerFn({ method: "GET" })
       .from("exam_sessions")
       .select("id", { head: true, count: "exact" })
       .eq("exam_id", data.id);
-    const exercise_ids = (exam.exam_questions ?? [])
-      .sort((a: any, b: any) => a.position - b.position)
-      .map((q: any) => q.exercise_id);
-    const template_rules = (exam.exam_template_rules ?? [])
-      .sort((a: any, b: any) => a.position - b.position)
-      .map((r: any) => ({
+    type AdminExamDetailRow = Tables<"exams"> & {
+      exam_questions: Pick<Tables<"exam_questions">, "exercise_id" | "position">[] | null;
+      exam_template_rules:
+        | Pick<
+            Tables<"exam_template_rules">,
+            "id" | "topic_id" | "difficulty_filter" | "question_count" | "position"
+          >[]
+        | null;
+    };
+    const typedExam = exam as unknown as AdminExamDetailRow;
+    const exercise_ids = (typedExam.exam_questions ?? [])
+      .sort((a, b) => a.position - b.position)
+      .map((q) => q.exercise_id);
+    const template_rules = (typedExam.exam_template_rules ?? [])
+      .sort((a, b) => a.position - b.position)
+      .map((r) => ({
         topic_id: r.topic_id,
         difficulty_filter: r.difficulty_filter,
         question_count: r.question_count,

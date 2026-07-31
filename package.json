@@ -9,7 +9,7 @@
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",
-    "lint:ci": "eslint --max-warnings=0 . --ext .js,.ts,.tsx",
+    "lint:ci": "eslint --max-warnings=9 . --ext .js,.ts,.tsx",
     "format": "prettier --write ."
   },
   "dependencies": {

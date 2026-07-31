@@ -109,8 +109,8 @@ function ResultPage() {
       const map: Record<string, string> = {};
       await Promise.all(
         (q.data?.questions ?? [])
-          .filter((qz: any) => qz.statement_image_path)
-          .map(async (qz: any) => {
+          .filter((qz) => qz?.statement_image_path)
+          .map(async (qz) => {
             const u = await getExerciseImageUrl(qz.statement_image_path);
             if (u) map[qz.id] = u;
           }),
@@ -140,8 +140,8 @@ function ResultPage() {
     );
   }
 
-  const s: any = q.data.session;
-  const questions: any[] = q.data.questions;
+  const s = q.data.session;
+  const questions = q.data.questions;
   const answers = (s.answers as Record<string, number>) ?? {};
   const passing = s.exam?.passing_score ?? 0;
   const passed = score >= passing;

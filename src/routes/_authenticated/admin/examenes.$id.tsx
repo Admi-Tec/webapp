@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
-import { ExamForm } from "@/components/exam-form";
+import { ExamForm, type ExamFormValues } from "@/components/exam-form";
 import { getAdminExam } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/examenes/$id")({
@@ -15,7 +15,7 @@ function EditExam() {
 
   if (q.isLoading) return <p className="text-sm text-muted-foreground">Cargando…</p>;
   if (!q.data) return <p className="text-sm text-destructive">No encontrado.</p>;
-  const e = q.data as any;
+  const e = q.data;
 
   return (
     <div>
@@ -29,9 +29,9 @@ function EditExam() {
           time_limit_min: e.time_limit_min,
           passing_score: e.passing_score,
           max_attempts: e.max_attempts,
-          status: e.status,
-          question_order: e.question_order,
-          exam_type: e.exam_type ?? "standard",
+          status: e.status as ExamFormValues["status"],
+          question_order: e.question_order as ExamFormValues["question_order"],
+          exam_type: (e.exam_type ?? "standard") as ExamFormValues["exam_type"],
           exercise_ids: e.exercise_ids ?? [],
           template_rules: e.template_rules ?? [],
           points_correct: e.points_correct,

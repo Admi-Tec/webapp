@@ -10,8 +10,8 @@ export const Route = createFileRoute("/_authenticated/admin")({
     try {
       const { isAdmin } = await checkIsAdmin();
       if (!isAdmin) throw redirect({ to: "/panel" });
-    } catch (e: any) {
-      if (e?.isRedirect) throw e;
+    } catch (e) {
+      if (e && typeof e === "object" && "isRedirect" in e) throw e;
       throw redirect({ to: "/panel" });
     }
   },

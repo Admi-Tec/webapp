@@ -645,8 +645,8 @@ function Index() {
               <strong className="font-semibold text-foreground">
                 un ejercicio real de nuestra base
               </strong>{" "}
-              (el mismo para todos los estudiantes). Resuélvelo contra el reloj y compara tus resultados con todos
-              los que lo intentaron hoy.
+              (el mismo para todos los estudiantes). Resuélvelo contra el reloj y compara tus
+              resultados con todos los que lo intentaron hoy.
             </p>
             <p className="mt-3 text-sm text-muted-foreground">
               Sin registrarte y sin presión: pruébalo cuando quieras,{" "}

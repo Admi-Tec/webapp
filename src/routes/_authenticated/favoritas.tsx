@@ -23,17 +23,20 @@ function FavoritesPage() {
   // never stayed referentially equal across renders. Memoizing `items`
   // itself off `q.data` (the actual stable source) fixes both this and
   // `filtered`, which was also unmemoized.
-  const items = useMemo(() => (q.data ?? []).map((f: any) => f.exercise).filter(Boolean), [q.data]);
+  const items = useMemo(
+    () => (q.data ?? []).map((f) => f.exercise).filter((ex): ex is NonNullable<typeof ex> => !!ex),
+    [q.data],
+  );
   const topics = useMemo(() => {
     const map = new Map<string, string>();
-    items.forEach((ex: any) => {
+    items.forEach((ex) => {
       if (ex.topic?.slug) map.set(ex.topic.slug, ex.topic.name);
     });
     return Array.from(map, ([slug, name]) => ({ slug, name }));
   }, [items]);
 
   const filtered = useMemo(
-    () => (topic === "all" ? items : items.filter((ex: any) => ex.topic?.slug === topic)),
+    () => (topic === "all" ? items : items.filter((ex) => ex.topic?.slug === topic)),
     [items, topic],
   );
 
@@ -87,7 +90,7 @@ function FavoritesPage() {
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
-          {filtered.map((ex: any) => (
+          {filtered.map((ex) => (
             <ExerciseCard key={ex.id} ex={ex} />
           ))}
         </div>

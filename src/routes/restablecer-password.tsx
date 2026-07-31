@@ -52,8 +52,11 @@ function ResetPasswordPage() {
       if (error) throw error;
       toast.success("Contraseña actualizada. Ya iniciaste sesión con ella.");
       navigate({ to: "/panel", replace: true });
-    } catch (err: any) {
-      const friendly = err?.message ?? "No se pudo actualizar tu contraseña. Inténtalo de nuevo.";
+    } catch (err) {
+      const friendly =
+        err instanceof Error
+          ? err.message
+          : "No se pudo actualizar tu contraseña. Inténtalo de nuevo.";
       setFormError(friendly);
       toast.error(friendly);
     } finally {

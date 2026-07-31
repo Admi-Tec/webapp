@@ -66,7 +66,7 @@ function CarrerasPage() {
 
   useEffect(() => {
     if (!universityId && unisQ.data && unisQ.data.length > 0) {
-      const firstActive = unisQ.data.find((u: any) => u.active) ?? unisQ.data[0];
+      const firstActive = unisQ.data.find((u) => u.active) ?? unisQ.data[0];
       setUniversityId(firstActive.id);
     }
   }, [unisQ.data, universityId]);
@@ -115,8 +115,8 @@ function CarrerasPage() {
       flashSaveFeedback("accepted");
       q.refetch();
       setTimeout(() => setDialogOpen(false), 550);
-    } catch (err: any) {
-      toast.error(err?.message ?? "Error");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Error");
       flashSaveFeedback("refused");
     } finally {
       setSaving(false);
@@ -127,8 +127,8 @@ function CarrerasPage() {
     try {
       await setActiveFn({ data: { id: c.id, active: !c.active } });
       q.refetch();
-    } catch (err: any) {
-      toast.error(err?.message ?? "Error");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Error");
     }
   }
   async function onDelete(c: CareerRow) {
@@ -137,8 +137,8 @@ function CarrerasPage() {
       await delFn({ data: { id: c.id } });
       toast.success("Eliminada");
       q.refetch();
-    } catch (err: any) {
-      toast.error(err?.message ?? "Error");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Error");
     }
   }
 
@@ -151,7 +151,7 @@ function CarrerasPage() {
               <SelectValue placeholder="Selecciona una universidad" />
             </SelectTrigger>
             <SelectContent>
-              {(unisQ.data ?? []).map((u: any) => (
+              {(unisQ.data ?? []).map((u) => (
                 <SelectItem key={u.id} value={u.id}>
                   {u.short_name ?? u.name}
                   {!u.active ? " (inactiva)" : ""}

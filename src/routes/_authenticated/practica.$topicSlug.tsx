@@ -71,7 +71,7 @@ function PracticePage() {
   const profileFn = useServerFn(getFullProfile);
   const profileQ = useQuery({ queryKey: ["full-profile"], queryFn: () => profileFn() });
   const targetUniversity = (profileQ.data?.universities ?? [])
-    .map((u: any) => u.university)
+    .map((u) => u.university)
     .filter(Boolean)[0];
 
   const currentSubtopic = subtopic ? topic.subtopics.find((s) => s.slug === subtopic) : undefined;
@@ -93,7 +93,7 @@ function PracticePage() {
 
   useEffect(() => {
     if (q.data && order.length === 0) {
-      const ids = q.data.map((e: any) => e.id);
+      const ids = q.data.map((e) => e.id);
       const shuffled = [...ids].sort(() => Math.random() - 0.5);
       // Practicing a specific subtopic is a focused round: 10 random exercises,
       // or fewer if the subtopic doesn't have that many.
@@ -108,7 +108,7 @@ function PracticePage() {
   }, [idx]);
 
   const [imgUrl, setImgUrl] = useState<string | null>(null);
-  const currentImagePath = q.data?.find((e: any) => e.id === order[idx])?.statement_image_path;
+  const currentImagePath = q.data?.find((e) => e.id === order[idx])?.statement_image_path;
   useEffect(() => {
     let alive = true;
     setImgUrl(null);
@@ -167,7 +167,7 @@ function PracticePage() {
     );
   }
 
-  const current = q.data.find((e: any) => e.id === currentId);
+  const current = q.data.find((e) => e.id === currentId);
   if (!current) return null;
   const total = order.length;
 
@@ -185,7 +185,9 @@ function PracticePage() {
       });
       setResult(r);
       setStats((s) => ({ correct: s.correct + (r.isCorrect ? 1 : 0), done: s.done + 1 }));
-    } catch {}
+    } catch {
+      // Transient network/server error — silently skip; the student can just retry.
+    }
   }
 
   function next() {

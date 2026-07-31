@@ -154,7 +154,8 @@ function PlanesPage() {
           que todos están cubiertos por la beta. */}
       {betaActive ? (
         <div className="animate-alert-in mx-auto mt-6 max-w-lg rounded-xl border border-accent/50 bg-accent/15 px-4 py-3 text-center text-sm">
-          Durante la version beta, <strong className="font-semibold">todos tienen Premium gratis</strong>.
+          Durante la version beta,{" "}
+          <strong className="font-semibold">todos tienen Premium gratis</strong>.
         </div>
       ) : (
         onTrial && (

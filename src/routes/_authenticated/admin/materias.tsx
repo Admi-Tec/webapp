@@ -118,8 +118,8 @@ function MateriasPage() {
       flashSaveFeedback("accepted");
       q.refetch();
       setTimeout(() => setDialogOpen(false), 550);
-    } catch (e: any) {
-      toast.error(e?.message ?? "Error");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Error");
       flashSaveFeedback("refused");
     } finally {
       setSaving(false);
@@ -130,8 +130,8 @@ function MateriasPage() {
     try {
       await setActiveFn({ data: { id: t.id, active: !t.active } });
       q.refetch();
-    } catch (e: any) {
-      toast.error(e?.message ?? "Error");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Error");
     }
   }
   async function onDelete(t: TopicRow) {
@@ -140,8 +140,8 @@ function MateriasPage() {
       await delFn({ data: { id: t.id } });
       toast.success("Eliminada");
       q.refetch();
-    } catch (e: any) {
-      toast.error(e?.message ?? "Error");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Error");
     }
   }
 
@@ -351,8 +351,8 @@ function SubtopicsPanel({ topic, onChanged }: { topic: TopicRow; onChanged: () =
       toast[res.duplicated ? "info" : "success"](res.duplicated ? "Ya existía" : "Tema creado");
       setNewName("");
       onChanged();
-    } catch (e: any) {
-      toast.error(e?.message ?? "Error");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Error");
     } finally {
       setCreating(false);
     }
@@ -379,8 +379,8 @@ function SubtopicsPanel({ topic, onChanged }: { topic: TopicRow; onChanged: () =
       toast.success("Tema actualizado");
       setEditingId(null);
       onChanged();
-    } catch (e: any) {
-      toast.error(e?.message ?? "Error");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Error");
     } finally {
       setBusyId(null);
     }
@@ -397,8 +397,8 @@ function SubtopicsPanel({ topic, onChanged }: { topic: TopicRow; onChanged: () =
       await delFn({ data: { id: s.id } });
       toast.success("Tema eliminado");
       onChanged();
-    } catch (e: any) {
-      toast.error(e?.message ?? "Error");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Error");
     } finally {
       setBusyId(null);
     }

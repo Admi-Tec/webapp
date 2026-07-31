@@ -1,3 +1,5 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 import { getPlanStatusRaw } from "@/lib/plan.functions";
 
 // A diferencia de assertAdmin (admin.functions.ts, exercise-review.functions.ts),
@@ -7,7 +9,10 @@ import { getPlanStatusRaw } from "@/lib/plan.functions";
 // lo exige de verdad: sin esto, cualquier usuario Gratuito podría llamar la
 // server function directamente (devtools/fetch) y recibir la data completa aunque
 // la UI la difumine.
-export async function assertPremium(context: { supabase: any; userId: string }) {
+export async function assertPremium(context: {
+  supabase: SupabaseClient<Database>;
+  userId: string;
+}) {
   const status = await getPlanStatusRaw(context);
   if (!status.isPremium) throw new Error("Requiere Premium");
 }

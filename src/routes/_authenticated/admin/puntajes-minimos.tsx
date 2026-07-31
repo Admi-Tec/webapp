@@ -81,7 +81,7 @@ function CareerSelectForUniversity({
             Sin carreras registradas para esta universidad.
           </div>
         )}
-        {careers.map((c: any) => (
+        {careers.map((c) => (
           <SelectItem key={c.id} value={c.id}>
             {c.name}
           </SelectItem>
@@ -118,9 +118,7 @@ function PuntajesMinimosPage() {
     setExamId("");
   }, [universityId]);
 
-  const examsForUniversity = (examsQ.data ?? []).filter(
-    (e: any) => e.university?.id === universityId,
-  );
+  const examsForUniversity = (examsQ.data ?? []).filter((e) => e.university?.id === universityId);
 
   function openNew() {
     setEditing(null);
@@ -165,8 +163,8 @@ function PuntajesMinimosPage() {
       flashSaveFeedback("accepted");
       q.refetch();
       setTimeout(() => setDialogOpen(false), 550);
-    } catch (err: any) {
-      toast.error(err?.message ?? "Error");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Error");
       flashSaveFeedback("refused");
     } finally {
       setSaving(false);
@@ -182,8 +180,8 @@ function PuntajesMinimosPage() {
       await delFn({ data: { id: r.id } });
       toast.success("Eliminado");
       q.refetch();
-    } catch (err: any) {
-      toast.error(err?.message ?? "Error");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Error");
     }
   }
 
@@ -215,7 +213,7 @@ function PuntajesMinimosPage() {
                     <SelectValue placeholder="Selecciona…" />
                   </SelectTrigger>
                   <SelectContent>
-                    {(unisQ.data ?? []).map((u: any) => (
+                    {(unisQ.data ?? []).map((u) => (
                       <SelectItem key={u.id} value={u.id}>
                         {u.short_name ?? u.name}
                       </SelectItem>
@@ -245,7 +243,7 @@ function PuntajesMinimosPage() {
                         Sin exámenes registrados para esta universidad.
                       </div>
                     )}
-                    {examsForUniversity.map((e: any) => (
+                    {examsForUniversity.map((e) => (
                       <SelectItem key={e.id} value={e.id}>
                         {e.title}
                       </SelectItem>

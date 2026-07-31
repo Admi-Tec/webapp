@@ -1,8 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { Database } from "@/integrations/supabase/types";
 import { z } from "zod";
 
-async function assertAdmin(context: { supabase: any; userId: string }) {
+async function assertAdmin(context: { supabase: SupabaseClient<Database>; userId: string }) {
   const { data, error } = await context.supabase.rpc("has_role", {
     _user_id: context.userId,
     _role: "admin",
@@ -32,7 +34,7 @@ export const listLowRatedExercises = createServerFn({ method: "GET" })
     await assertAdmin(context);
     const { data, error } = await context.supabase.rpc("get_exercise_review_queue");
     if (error) throw new Error(error.message);
-    return (data ?? []).filter((r: any) => r.flag_reason === "calificacion_baja");
+    return (data ?? []).filter((r) => r.flag_reason === "calificacion_baja");
   });
 
 const reportStatus = z.enum(["pendiente", "resuelto", "descartado", "all"]).default("pendiente");

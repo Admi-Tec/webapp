@@ -143,7 +143,7 @@ function SubtopicPage() {
         {exercises.length} ejercicio{exercises.length === 1 ? "" : "s"}
       </p>
       <div className="mt-8 grid gap-3 sm:grid-cols-2">
-        {exercises.map((ex: any, i: number) => (
+        {exercises.map((ex, i) => (
           <div
             key={ex.id}
             className="animate-fade-up"

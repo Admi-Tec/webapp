@@ -36,8 +36,8 @@ export function DeleteExamAttemptButton({
       setOpen(false);
       toast.success("Intento eliminado de tu historial.");
       onDeleted();
-    } catch (err: any) {
-      toast.error(err?.message ?? "No se pudo eliminar el intento.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "No se pudo eliminar el intento.");
     } finally {
       setDeleting(false);
     }

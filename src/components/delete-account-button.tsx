@@ -33,8 +33,8 @@ export function DeleteAccountButton() {
       toast.success("Tu cuenta fue eliminada.");
       router.invalidate();
       navigate({ to: "/auth", replace: true });
-    } catch (err: any) {
-      toast.error(err?.message ?? "No se pudo eliminar la cuenta.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "No se pudo eliminar la cuenta.");
       setDeleting(false);
     }
   }

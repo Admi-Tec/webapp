@@ -89,7 +89,7 @@ export function ExerciseForm({ initial }: { initial?: ExerciseFormValues }) {
   const [subtopicDialogOpen, setSubtopicDialogOpen] = useState(false);
 
   const subtopicsForTopic = useMemo(
-    () => (meta.data?.subtopics ?? []).filter((s: any) => s.topic_id === v.topic_id),
+    () => (meta.data?.subtopics ?? []).filter((s) => s.topic_id === v.topic_id),
     [meta.data, v.topic_id],
   );
 
@@ -136,8 +136,8 @@ export function ExerciseForm({ initial }: { initial?: ExerciseFormValues }) {
       }
       flashSaveFeedback("accepted");
       setTimeout(() => navigate({ to: "/admin/ejercicios" }), 550);
-    } catch (err: any) {
-      toast.error(err?.message ?? "Error al guardar");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Error al guardar");
       flashSaveFeedback("refused");
     } finally {
       setSaving(false);
@@ -168,7 +168,7 @@ export function ExerciseForm({ initial }: { initial?: ExerciseFormValues }) {
               <SelectContent>
                 <SelectItem value="__new_topic__">+ Agregar nuevo curso</SelectItem>
                 <SelectSeparator />
-                {meta.data?.topics.map((t: any) => (
+                {meta.data?.topics.map((t) => (
                   <SelectItem key={t.id} value={t.id}>
                     {t.name}
                   </SelectItem>
@@ -205,7 +205,7 @@ export function ExerciseForm({ initial }: { initial?: ExerciseFormValues }) {
                   + Agregar nuevo tema
                 </SelectItem>
                 <SelectSeparator />
-                {subtopicsForTopic.map((s: any) => (
+                {subtopicsForTopic.map((s) => (
                   <SelectItem key={s.id} value={s.id}>
                     {s.name}
                   </SelectItem>
@@ -234,7 +234,7 @@ export function ExerciseForm({ initial }: { initial?: ExerciseFormValues }) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="__none">Genérico — todas las universidades</SelectItem>
-                {meta.data?.universities.map((u: any) => (
+                {meta.data?.universities.map((u) => (
                   <SelectItem key={u.id} value={u.id}>
                     {u.short_name}
                   </SelectItem>

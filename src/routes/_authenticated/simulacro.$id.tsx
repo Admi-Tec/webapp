@@ -54,8 +54,8 @@ function SimulacroPreview() {
     try {
       const { sessionId } = await startFn({ data: { examId: id } });
       navigate({ to: "/examen-sesion/$sessionId", params: { sessionId } });
-    } catch (e: any) {
-      toast.error(e?.message ?? "No se pudo generar el simulacro");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudo generar el simulacro");
     } finally {
       setStarting(false);
     }
@@ -81,7 +81,9 @@ function SimulacroPreview() {
     return (
       <div className="mx-auto max-w-3xl px-4 py-16 text-center">
         <p className="text-destructive">No se pudo cargar este simulacro.</p>
-        <p className="mt-1 text-sm text-muted-foreground">{(preview.error as any)?.message}</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {preview.error instanceof Error ? preview.error.message : null}
+        </p>
         <div className="mt-4 flex justify-center gap-2">
           <Button variant="outline" className="press" onClick={() => preview.refetch()}>
             Reintentar
@@ -109,9 +111,9 @@ function SimulacroPreview() {
   const showLock = isUniTemplate && premium.locked && !premium.loading;
   const comingSoon = t.totalQuestions === 0;
   const done = (attempts.data ?? []).filter(
-    (a: any) => a.status === "graded" || a.status === "submitted",
+    (a) => a.status === "graded" || a.status === "submitted",
   );
-  const inProgress = (attempts.data ?? []).find((a: any) => a.status === "in_progress");
+  const inProgress = (attempts.data ?? []).find((a) => a.status === "in_progress");
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
@@ -261,14 +263,14 @@ function SimulacroPreview() {
           </button>
           <div className="collapsible" data-open={showAttempts}>
             <div className="mt-3 space-y-2">
-              {done.map((a: any) => (
+              {done.map((a) => (
                 <ExamAttemptRow
                   key={a.id}
                   sessionId={a.id}
                   startedAt={a.started_at}
                   score={a.score}
                   maxScore={a.max_score}
-                  total={a.total}
+                  total={a.total ?? 0}
                   onDeleted={() => attempts.refetch()}
                 />
               ))}

@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { Database, Tables } from "@/integrations/supabase/types";
 import { z } from "zod";
 import { assertPremium } from "@/lib/premium-guard";
 import {
@@ -11,15 +13,26 @@ import {
   type SubtopicSignals,
 } from "@/lib/recommendation-scoring";
 
+type RecSupabaseClient = SupabaseClient<Database>;
+
 const EXERCISE_SELECT =
   "id, statement_md, difficulty, exam_year, topic:topics(slug,name), subtopic:subtopics(slug,name), university:universities(slug,short_name)";
+
+type ExerciseRecRow = Pick<
+  Tables<"exercises">,
+  "id" | "statement_md" | "difficulty" | "exam_year"
+> & {
+  topic: Pick<Tables<"topics">, "slug" | "name"> | null;
+  subtopic: Pick<Tables<"subtopics">, "slug" | "name"> | null;
+  university: Pick<Tables<"universities">, "slug" | "short_name"> | null;
+};
 
 // Resuelve "la" universidad/carrera objetivo del estudiante — mismo patrón
 // que panel.tsx/simulacros.index.tsx (universities[0], ya determinista tras
 // el .order("created_at") agregado a getFullProfile). Reimplementado acá en
 // vez de llamar getFullProfile porque un server function no debería invocar
 // a otro server function directamente.
-async function resolveTargetUniversity(context: { supabase: any; userId: string }) {
+async function resolveTargetUniversity(context: { supabase: RecSupabaseClient; userId: string }) {
   const { data } = await context.supabase
     .from("student_universities")
     .select("university_id, career_id, exam_date, university:universities(id, exam_date)")
@@ -28,11 +41,15 @@ async function resolveTargetUniversity(context: { supabase: any; userId: string 
     .limit(1)
     .maybeSingle();
   if (!data) return null;
-  const examDate = data.exam_date ?? (data.university as any)?.exam_date ?? null;
+  const typedData = data as unknown as Pick<
+    Tables<"student_universities">,
+    "university_id" | "career_id" | "exam_date"
+  > & { university: Pick<Tables<"universities">, "id" | "exam_date"> | null };
+  const examDate = typedData.exam_date ?? typedData.university?.exam_date ?? null;
   return {
-    universityId: data.university_id as string,
-    careerId: data.career_id as string | null,
-    examDate: examDate as string | null,
+    universityId: typedData.university_id,
+    careerId: typedData.career_id,
+    examDate,
   };
 }
 
@@ -47,7 +64,7 @@ function daysUntil(dateStr: string | null): number | null {
 // resto del cálculo cuando no hay match (ver plan §2, corrección sobre
 // get_applicable_min_score, eliminada en una migración posterior).
 async function resolveScoreGap(
-  context: { supabase: any; userId: string },
+  context: { supabase: RecSupabaseClient; userId: string },
   universityId: string,
   careerId: string | null,
 ): Promise<number | null> {
@@ -84,7 +101,7 @@ type TopicMeta = { id: string; slug: string; name: string };
  * Compartido por los 3 endpoints de abajo.
  */
 async function gatherSignals(
-  context: { supabase: any; userId: string },
+  context: { supabase: RecSupabaseClient; userId: string },
   opts: { onlyTopicId?: string } = {},
 ) {
   const { supabase } = context;
@@ -132,9 +149,12 @@ async function gatherSignals(
       .not("exam_year", "is", null)
       .not("subtopic_id", "is", null)
       .gte("exam_year", cutoffYear);
-    (freqRows ?? []).forEach((r: any) => {
-      freqMap.set(r.subtopic_id, (freqMap.get(r.subtopic_id) ?? 0) + 1);
-      freqByTopic[r.topic_id] = Math.max(freqByTopic[r.topic_id] ?? 0, freqMap.get(r.subtopic_id)!);
+    (
+      (freqRows ?? []) as Pick<Tables<"exercises">, "subtopic_id" | "topic_id" | "exam_year">[]
+    ).forEach((r) => {
+      const subtopicId = r.subtopic_id as string;
+      freqMap.set(subtopicId, (freqMap.get(subtopicId) ?? 0) + 1);
+      freqByTopic[r.topic_id] = Math.max(freqByTopic[r.topic_id] ?? 0, freqMap.get(subtopicId)!);
     });
   }
 
@@ -158,14 +178,18 @@ async function gatherSignals(
           .in("topic_id", Array.from(candidateTopicIds))
       : { data: [] };
 
-  const subtopics: SubtopicMeta[] = (subtopicRows ?? []).map((r: any) => ({
+  type SubtopicWithTopicRow = Pick<Tables<"subtopics">, "id" | "slug" | "name" | "topic_id"> & {
+    topic: TopicMeta | null;
+  };
+  const typedSubtopicRows = (subtopicRows ?? []) as SubtopicWithTopicRow[];
+  const subtopics: SubtopicMeta[] = typedSubtopicRows.map((r) => ({
     id: r.id,
     slug: r.slug,
     name: r.name,
     topicId: r.topic_id,
   }));
   const topicById = new Map<string, TopicMeta>(
-    (subtopicRows ?? []).map((r: any) => [r.topic_id, r.topic as TopicMeta]),
+    typedSubtopicRows.filter((r) => r.topic).map((r) => [r.topic_id, r.topic as TopicMeta]),
   );
 
   const myStatsBySubtopic = new Map(myStats.map((s) => [s.subtopic_id, s]));
@@ -194,7 +218,7 @@ async function gatherSignals(
 }
 
 async function urgencyFor(
-  context: { supabase: any; userId: string },
+  context: { supabase: RecSupabaseClient; userId: string },
   target: { universityId: string; careerId: string | null; examDate: string | null } | null,
 ) {
   if (!target) return 1;
@@ -224,12 +248,18 @@ export const getDailyRecommendations = createServerFn({ method: "GET" })
         .eq("user_id", context.userId),
     ]);
     const recentlySolvedIds = new Set<string>(
-      (recentRes.data ?? []).map((r: any) => r.exercise_id),
+      ((recentRes.data ?? []) as Pick<Tables<"attempts">, "exercise_id">[]).map(
+        (r) => r.exercise_id,
+      ),
     );
-    const favoriteIds = new Set<string>((favRes.data ?? []).map((r: any) => r.exercise_id));
+    const favoriteIds = new Set<string>(
+      ((favRes.data ?? []) as Pick<Tables<"favorite_exercises">, "exercise_id">[]).map(
+        (r) => r.exercise_id,
+      ),
+    );
 
     const count = 4;
-    const picked: Array<{ exercise: any; reason: string }> = [];
+    const picked: Array<{ exercise: ExerciseRecRow; reason: string }> = [];
     const usedSubtopics = new Set<string>();
 
     // Dos pasadas: primero respetando "no repetir lo resuelto hace poco"
@@ -247,14 +277,14 @@ export const getDailyRecommendations = createServerFn({ method: "GET" })
           .eq("subtopic_id", s.subtopicId)
           .limit(8);
 
-        const pool = (candidates ?? []).filter((c: any) => {
+        const pool = ((candidates ?? []) as ExerciseRecRow[]).filter((c) => {
           if (lowQualityIds.has(c.id)) return false;
           if (!relaxRecent && recentlySolvedIds.has(c.id)) return false;
           return true;
         });
         if (pool.length === 0) continue;
 
-        const chosen = pool.find((c: any) => favoriteIds.has(c.id)) ?? pool[0];
+        const chosen = pool.find((c) => favoriteIds.has(c.id)) ?? pool[0];
         picked.push({ exercise: chosen, reason: reasonFor(s) });
         usedSubtopics.add(s.subtopicId);
       }
@@ -312,9 +342,11 @@ export const getPostExamRecommendations = createServerFn({ method: "GET" })
       .select("exercise_id, is_correct")
       .eq("exam_session_id", data.sessionId)
       .eq("user_id", userId);
-    const wrongIds = (sessionAttempts ?? [])
-      .filter((a: any) => !a.is_correct)
-      .map((a: any) => a.exercise_id as string);
+    const wrongIds = (
+      (sessionAttempts ?? []) as Pick<Tables<"attempts">, "exercise_id" | "is_correct">[]
+    )
+      .filter((a) => !a.is_correct)
+      .map((a) => a.exercise_id);
     if (wrongIds.length === 0) return [];
 
     const { data: wrongExercises } = await supabase
@@ -322,10 +354,14 @@ export const getPostExamRecommendations = createServerFn({ method: "GET" })
       .select("subtopic_id, topic_id, subtopic:subtopics(slug)")
       .in("id", wrongIds)
       .not("subtopic_id", "is", null);
-    const failedTopicIds = new Set((wrongExercises ?? []).map((e: any) => e.topic_id as string));
+    type WrongExerciseRow = Pick<Tables<"exercises">, "subtopic_id" | "topic_id"> & {
+      subtopic: Pick<Tables<"subtopics">, "slug"> | null;
+    };
+    const typedWrongExercises = (wrongExercises ?? []) as WrongExerciseRow[];
+    const failedTopicIds = new Set(typedWrongExercises.map((e) => e.topic_id));
     if (failedTopicIds.size === 0) return [];
     const subtopicSlugById = new Map(
-      (wrongExercises ?? []).map((e: any) => [e.subtopic_id as string, e.subtopic?.slug as string]),
+      typedWrongExercises.map((e) => [e.subtopic_id as string, e.subtopic?.slug ?? ""]),
     );
 
     // Rankea con las mismas señales de debilidad/antigüedad que el resto del
@@ -341,9 +377,9 @@ export const getPostExamRecommendations = createServerFn({ method: "GET" })
     for (const topicId of failedTopicIds) {
       const { signals } = await gatherSignals(context, { onlyTopicId: topicId });
       const failedSubtopicIds = new Set(
-        (wrongExercises ?? [])
-          .filter((e: any) => e.topic_id === topicId)
-          .map((e: any) => e.subtopic_id as string),
+        typedWrongExercises
+          .filter((e) => e.topic_id === topicId)
+          .map((e) => e.subtopic_id as string),
       );
       const relevant = signals.filter((s) => failedSubtopicIds.has(s.subtopicId));
       const ranked = rankSubtopics(relevant, 1);

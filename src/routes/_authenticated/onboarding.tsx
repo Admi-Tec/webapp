@@ -27,6 +27,9 @@ import { listTopics } from "@/lib/exercises.functions";
 import { listCareersForUniversities } from "@/lib/careers.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import type { Tables } from "@/integrations/supabase/types";
+
+type CareerRow = Pick<Tables<"careers">, "id" | "name" | "active" | "university_id">;
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
   head: () => ({ meta: [{ title: "Bienvenido · MatePre" }] }),
@@ -52,8 +55,10 @@ const PREP_METHOD_OPTIONS: Array<{ value: (typeof PREP_METHOD_VALUES)[number]; l
 ];
 
 type UniRow = { universityId: string; examDate: string; careerId: string | null };
+type PrepTime = (typeof PREP_TIME_VALUES)[number];
+type PrepMethod = (typeof PREP_METHOD_VALUES)[number];
 
-const profileQO = (fetchProfile: () => Promise<any>) =>
+const profileQO = (fetchProfile: () => ReturnType<typeof getFullProfile>) =>
   queryOptions({ queryKey: ["full-profile"], queryFn: () => fetchProfile() });
 
 function OnboardingPage() {
@@ -77,8 +82,8 @@ function OnboardingPage() {
 
   const [step, setStep] = useState(1);
   const [universities, setUniversities] = useState<UniRow[]>([]);
-  const [prepTime, setPrepTime] = useState<string | null>(null);
-  const [prepMethod, setPrepMethod] = useState<string | null>(null);
+  const [prepTime, setPrepTime] = useState<PrepTime | null>(null);
+  const [prepMethod, setPrepMethod] = useState<PrepMethod | null>(null);
   const [weakTopicIds, setWeakTopicIds] = useState<string[]>([]);
 
   const universityIds = universities.map((u) => u.universityId);
@@ -87,8 +92,8 @@ function OnboardingPage() {
     queryFn: () => careersFn({ data: { universityIds } }),
     enabled: universityIds.length > 0,
   });
-  const careersByUniversity = new Map<string, any[]>();
-  (careersQ.data ?? []).forEach((c: any) => {
+  const careersByUniversity = new Map<string, CareerRow[]>();
+  (careersQ.data ?? []).forEach((c) => {
     const list = careersByUniversity.get(c.university_id) ?? [];
     list.push(c);
     careersByUniversity.set(c.university_id, list);
@@ -109,14 +114,14 @@ function OnboardingPage() {
     if (seededRef.current) return;
     seededRef.current = true;
     setUniversities(
-      (data?.universities ?? []).map((u: any) => ({
+      (data?.universities ?? []).map((u) => ({
         universityId: u.university_id,
         examDate: u.exam_date ?? "",
         careerId: u.career_id ?? null,
       })),
     );
-    setPrepTime(data?.profile?.prep_time ?? null);
-    setPrepMethod(data?.profile?.prep_method ?? null);
+    setPrepTime((data?.profile?.prep_time as PrepTime | null) ?? null);
+    setPrepMethod((data?.profile?.prep_method as PrepMethod | null) ?? null);
     setWeakTopicIds(data?.profile?.initial_weak_topic_ids ?? []);
     setWeeklyStudyHours(
       data?.profile?.weekly_study_hours != null ? String(data.profile.weekly_study_hours) : "",
@@ -126,7 +131,7 @@ function OnboardingPage() {
 
   function addUniversityRow() {
     const used = new Set(universities.map((u) => u.universityId));
-    const next = allUniversities.find((u: any) => u.active && !used.has(u.id));
+    const next = allUniversities.find((u) => u.active && !used.has(u.id));
     if (!next) {
       toast.error("Ya agregaste todas las universidades disponibles");
       return;
@@ -153,8 +158,8 @@ function OnboardingPage() {
             examDate: u.examDate || null,
             careerId: u.careerId || null,
           })),
-          prepTime: prepTime as any,
-          prepMethod: prepMethod as any,
+          prepTime,
+          prepMethod,
           weeklyStudyHours: weeklyStudyHours ? Number(weeklyStudyHours) : null,
           initialWeakTopicIds: weakTopicIds,
           onboardingCompleted: true,
@@ -168,8 +173,8 @@ function OnboardingPage() {
       queryClient.invalidateQueries({ queryKey: ["weekly-progress"] });
       toast.success("¡Listo! Ya puedes empezar a practicar.");
       navigate({ to: "/panel", replace: true });
-    } catch (err: any) {
-      toast.error(err?.message ?? "No se pudo guardar tu información");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "No se pudo guardar tu información");
       setSubmitting(false);
     }
   }
@@ -266,8 +271,8 @@ function OnboardingPage() {
                     </SelectTrigger>
                     <SelectContent>
                       {allUniversities
-                        .filter((u: any) => u.active)
-                        .map((u: any) => (
+                        .filter((u) => u.active)
+                        .map((u) => (
                           <SelectItem key={u.id} value={u.id}>
                             {u.short_name ?? u.name}
                           </SelectItem>
@@ -368,9 +373,9 @@ function OnboardingPage() {
             </p>
             <div className="mt-4 space-y-4">
               {universities.map((row, i) => {
-                const uni = allUniversities.find((u: any) => u.id === row.universityId);
+                const uni = allUniversities.find((u) => u.id === row.universityId);
                 const rowCareers = (careersByUniversity.get(row.universityId) ?? []).filter(
-                  (c: any) => c.active || c.id === row.careerId,
+                  (c) => c.active || c.id === row.careerId,
                 );
                 return (
                   <div key={row.universityId}>
@@ -395,7 +400,7 @@ function OnboardingPage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="__none">— ninguna —</SelectItem>
-                        {rowCareers.map((c: any) => (
+                        {rowCareers.map((c) => (
                           <SelectItem key={c.id} value={c.id}>
                             {c.name}
                           </SelectItem>
@@ -418,7 +423,7 @@ function OnboardingPage() {
               Nos ayuda a sugerirte por dónde empezar mientras acumulas tu propio historial.
             </p>
             <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {allTopics.map((t: any) => {
+              {allTopics.map((t) => {
                 const selected = weakTopicIds.includes(t.id);
                 return (
                   <label

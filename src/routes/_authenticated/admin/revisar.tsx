@@ -34,9 +34,8 @@ function RevisarPage() {
   const resolveFn = useServerFn(resolveExerciseReport);
   const qc = useQueryClient();
 
-  const [status, setStatus] = useState<"pendiente" | "resuelto" | "descartado" | "all">(
-    "pendiente",
-  );
+  type ReportStatus = "pendiente" | "resuelto" | "descartado" | "all";
+  const [status, setStatus] = useState<ReportStatus>("pendiente");
   const [reasonFilter, setReasonFilter] = useState<string>("all");
 
   const reportsQ = useQuery({
@@ -51,7 +50,7 @@ function RevisarPage() {
   const filteredReports = useMemo(() => {
     const rows = reportsQ.data ?? [];
     if (reasonFilter === "all") return rows;
-    return rows.filter((r: any) => r.reason === reasonFilter);
+    return rows.filter((r) => r.reason === reasonFilter);
   }, [reportsQ.data, reasonFilter]);
 
   async function onAction(reportId: string, action: "resolve" | "dismiss") {
@@ -64,8 +63,8 @@ function RevisarPage() {
       );
       qc.invalidateQueries({ queryKey: ["admin-exercise-reports"] });
       qc.invalidateQueries({ queryKey: ["admin-exercise-review-badge"] });
-    } catch (e: any) {
-      toast.error(e?.message ?? "Error");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Error");
     }
   }
 
@@ -85,7 +84,7 @@ function RevisarPage() {
             <Flag className="h-4 w-4" /> Reportados ({filteredReports.length})
           </h3>
           <div className="flex flex-wrap gap-2">
-            <Select value={status} onValueChange={(v: any) => setStatus(v)}>
+            <Select value={status} onValueChange={(v) => setStatus(v as ReportStatus)}>
               <SelectTrigger className="w-40">
                 <SelectValue />
               </SelectTrigger>
@@ -119,7 +118,7 @@ function RevisarPage() {
               Sin reportes en este filtro.
             </p>
           )}
-          {filteredReports.map((r: any) => (
+          {filteredReports.map((r) => (
             <div key={r.id} className="rounded-xl border border-border bg-card p-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
@@ -186,7 +185,7 @@ function RevisarPage() {
               Ningún ejercicio en esta categoría por ahora.
             </p>
           )}
-          {(lowRatedQ.data ?? []).map((r: any) => (
+          {(lowRatedQ.data ?? []).map((r) => (
             <div
               key={r.exercise_id}
               className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card p-4"

@@ -90,8 +90,8 @@ export function NewTopicDialog({
       setTimeout(() => actualOnOpenChange(false), 550);
       setName("");
       setDescription("");
-    } catch (e: any) {
-      toast.error(e?.message ?? "Error al crear");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Error al crear");
       flashSaveFeedback("refused");
     } finally {
       setSaving(false);

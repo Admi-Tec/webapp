@@ -71,8 +71,8 @@ export function ImageUpload({
       if (oldPath) {
         deleteFn(oldPath).catch(() => {});
       }
-    } catch (e: any) {
-      setError(e?.message ?? "Error subiendo imagen");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error subiendo imagen");
       setPreview(null);
     } finally {
       clearInterval(tick);

@@ -110,7 +110,7 @@ function parseChoices(section: string | null): { choices: string[]; letters: str
   const choices: string[] = [];
   const letters: string[] = [];
   for (const line of section.split(/\r?\n/)) {
-    const m = line.trim().match(/^([A-Za-z])[\.\)]\s*(.+)$/);
+    const m = line.trim().match(/^([A-Za-z])[.)]\s*(.+)$/);
     if (!m) continue;
     letters.push(m[1].toUpperCase());
     choices.push(m[2].trim());

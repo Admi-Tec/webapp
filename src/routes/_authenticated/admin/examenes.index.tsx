@@ -38,8 +38,8 @@ function AdminExamsList() {
       toast.success("Examen eliminado");
       router.invalidate();
       q.refetch();
-    } catch (e: any) {
-      toast.error(e?.message ?? "Error");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Error");
     }
   }
 
@@ -54,14 +54,14 @@ function AdminExamsList() {
       await archive({ data: { id } });
       toast.success("Examen archivado");
       q.refetch();
-    } catch (e: any) {
-      toast.error(e?.message ?? "Error");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Error");
     }
   }
 
   const rows = useMemo(
     () =>
-      (q.data ?? []).filter((e: any) =>
+      (q.data ?? []).filter((e) =>
         filter === "all" ? true : (e.exam_type ?? "standard") === filter,
       ),
     [q.data, filter],
@@ -107,7 +107,7 @@ function AdminExamsList() {
                 </TableCell>
               </TableRow>
             )}
-            {rows.map((e: any) => {
+            {rows.map((e) => {
               const isTemplate = (e.exam_type ?? "standard") === "template";
               const hasAttempts = (e.attemptCount ?? 0) > 0;
               return (

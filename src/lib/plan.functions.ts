@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
@@ -71,7 +71,10 @@ function toStatus(raw: unknown): PlanStatus {
 // (src/lib/premium-guard.ts) pueda reusar exactamente la misma lógica de
 // "revertir una prueba vencida antes de responder" sin duplicarla ni pagar
 // un round-trip RPC aparte cada vez que un server function premium la llama.
-export async function getPlanStatusRaw(context: { supabase: any; userId: string }) {
+export async function getPlanStatusRaw(context: {
+  supabase: SupabaseClient<Database>;
+  userId: string;
+}) {
   const { supabase, userId } = context;
   const { data, error } = await supabase.rpc("get_plan_status");
   if (error) throw new Error(error.message);

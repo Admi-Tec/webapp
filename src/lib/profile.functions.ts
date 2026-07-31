@@ -124,7 +124,7 @@ const updateSchema = z.object({
     .trim()
     .min(3)
     .max(30)
-    .regex(/^[a-zA-Z0-9_\-]+$/)
+    .regex(/^[a-zA-Z0-9_-]+$/)
     .nullable()
     .optional(),
   career: z.string().trim().max(120).nullable().optional(),

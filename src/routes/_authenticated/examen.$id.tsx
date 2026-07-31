@@ -54,8 +54,8 @@ function ExamPreview() {
     try {
       const { sessionId } = await startFn({ data: { examId: id } });
       navigate({ to: "/examen-sesion/$sessionId", params: { sessionId } });
-    } catch (e: any) {
-      toast.error(e?.message ?? "No se pudo iniciar");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudo iniciar");
     } finally {
       setStarting(false);
     }
@@ -81,7 +81,9 @@ function ExamPreview() {
     return (
       <div className="mx-auto max-w-3xl px-4 py-16 text-center">
         <p className="text-destructive">No se pudo cargar este examen.</p>
-        <p className="mt-1 text-sm text-muted-foreground">{(preview.error as any)?.message}</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {preview.error instanceof Error ? preview.error.message : null}
+        </p>
         <div className="mt-4 flex justify-center gap-2">
           <Button variant="outline" className="press" onClick={() => preview.refetch()}>
             Reintentar
@@ -103,11 +105,11 @@ function ExamPreview() {
       </div>
     );
 
-  const e: any = preview.data;
+  const e = preview.data;
   const done = (attempts.data ?? []).filter(
-    (a: any) => a.status === "graded" || a.status === "submitted",
+    (a) => a.status === "graded" || a.status === "submitted",
   );
-  const inProgressRaw = (attempts.data ?? []).find((a: any) => a.status === "in_progress");
+  const inProgressRaw = (attempts.data ?? []).find((a) => a.status === "in_progress");
   // Mirrors the expiry check in startExamSession: una sesión in_progress cuyo
   // tiempo límite ya pasó no debe bloquear un intento nuevo con "Reanudar" —
   // dejamos que el flujo de "Iniciar examen" la cierre y cree una fresca.
@@ -200,7 +202,7 @@ function ExamPreview() {
               Preguntas por curso
             </p>
             <ul className="mt-2 space-y-1.5 text-sm">
-              {e.topicBreakdown.map((tb: any, i: number) => (
+              {e.topicBreakdown.map((tb, i) => (
                 <li
                   key={`${tb.name}-${i}`}
                   className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2"
@@ -276,14 +278,14 @@ function ExamPreview() {
           </button>
           <div className="collapsible" data-open={showAttempts}>
             <div className="mt-3 space-y-2">
-              {done.map((a: any) => (
+              {done.map((a) => (
                 <ExamAttemptRow
                   key={a.id}
                   sessionId={a.id}
                   startedAt={a.started_at}
                   score={a.score}
                   maxScore={a.max_score}
-                  total={a.total}
+                  total={a.total ?? 0}
                   onDeleted={() => attempts.refetch()}
                 />
               ))}

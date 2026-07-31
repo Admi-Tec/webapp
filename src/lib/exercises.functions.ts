@@ -136,7 +136,7 @@ export const listExercises = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     let result = rows ?? [];
     if (data.universitySlug) {
-      result = result.filter((r: any) => r.university?.slug === data.universitySlug);
+      result = result.filter((r) => r.university?.slug === data.universitySlug);
     }
     return result;
   });

@@ -149,8 +149,8 @@ function UniversidadesPage() {
       flashSaveFeedback("accepted");
       q.refetch();
       setTimeout(() => setDialogOpen(false), 550);
-    } catch (err: any) {
-      toast.error(err?.message ?? "Error");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Error");
       flashSaveFeedback("refused");
     } finally {
       setSaving(false);
@@ -161,8 +161,8 @@ function UniversidadesPage() {
     try {
       await setActiveFn({ data: { id: u.id, active: !u.active } });
       q.refetch();
-    } catch (err: any) {
-      toast.error(err?.message ?? "Error");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Error");
     }
   }
 
@@ -172,8 +172,8 @@ function UniversidadesPage() {
       await delFn({ data: { id: u.id } });
       toast.success("Eliminada");
       q.refetch();
-    } catch (err: any) {
-      toast.error(err?.message ?? "Error");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Error");
     }
   }
 
@@ -193,7 +193,10 @@ function UniversidadesPage() {
               className="w-56 pl-8"
             />
           </div>
-          <Select value={statusFilter} onValueChange={(v: any) => setStatusFilter(v)}>
+          <Select
+            value={statusFilter}
+            onValueChange={(v) => setStatusFilter(v as "all" | "active" | "inactive")}
+          >
             <SelectTrigger className="w-40">
               <SelectValue />
             </SelectTrigger>
