@@ -19,7 +19,7 @@ import { BetaBanner } from "@/components/beta-banner";
 import { Toaster } from "@/components/ui/sonner";
 import { JsonLd } from "@/components/json-ld";
 import { supabase } from "@/integrations/supabase/client";
-import { SITE_URL, SITE_NAME, SITE_DESCRIPTION, absoluteUrl } from "@/lib/site";
+import { SITE_URL, SITE_NAME, SITE_DESCRIPTION, GA_MEASUREMENT_ID, absoluteUrl } from "@/lib/site";
 import {
   capturedAuthParams,
   capturedAuthHasSession,
@@ -126,6 +126,22 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600;700&display=swap",
       },
     ],
+    // Google Analytics (GA4) — solo en producción, para que el tráfico de
+    // `bun run dev`/preview local no ensucie las métricas reales.
+    scripts: import.meta.env.PROD
+      ? [
+          {
+            src: `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`,
+            async: true,
+          },
+          {
+            children: `window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', '${GA_MEASUREMENT_ID}');`,
+          },
+        ]
+      : [],
   }),
   shellComponent: RootShell,
   component: RootComponent,
