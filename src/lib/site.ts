@@ -17,7 +17,7 @@ export const CONTACT_EMAIL = import.meta.env.VITE_CONTACT_EMAIL || "contact@admi
 // placeholder hasta que existan las cuentas reales — configura las VITE_* en
 // .env y en el entorno de deploy y todo el sitio las toma automáticamente.
 export const SOCIAL_LINKS = {
-  instagram: import.meta.env.VITE_INSTAGRAM_URL || "https://instagram.com/admitec.pe",
+  instagram: import.meta.env.VITE_INSTAGRAM_URL || "https://instagram.com/admi.tec",
   tiktok: import.meta.env.VITE_TIKTOK_URL || "https://tiktok.com/@admitec.pe",
   // Número en formato internacional sin "+" (51 = Perú) para el enlace wa.me.
   whatsapp: import.meta.env.VITE_WHATSAPP_URL || "https://wa.me/51999999999",

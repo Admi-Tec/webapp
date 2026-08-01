@@ -1,13 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { BookOpenText, CheckCircle2 } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { BookOpenText, CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
-import { pageMeta, SITE_NAME } from "@/lib/site";
+import { pageMeta, SITE_NAME, CONTACT_EMAIL } from "@/lib/site";
+import { submitComplaint } from "@/lib/contact.functions";
 
 export const Route = createFileRoute("/libro-de-reclamaciones")({
   head: () =>
@@ -59,12 +62,34 @@ function ComplaintsBookPage() {
     setForm((f) => ({ ...f, [key]: value }));
   }
 
-  // Frontend only for now: the form validates and confirms in place; wiring
-  // the submission to the backend (persistence + email) is pending.
+  const submitFn = useServerFn(submitComplaint);
+  const mutation = useMutation({
+    mutationFn: () =>
+      submitFn({
+        data: {
+          fullName: form.fullName,
+          document: form.document,
+          phone: form.phone || undefined,
+          email: form.email,
+          address: form.address || undefined,
+          guardian: form.guardian || undefined,
+          goodType: form.goodType,
+          goodDescription: form.goodDescription,
+          claimedAmount: form.claimedAmount || undefined,
+          complaintType: form.complaintType,
+          detail: form.detail,
+          request: form.request,
+        },
+      }),
+    onSuccess: () => {
+      setSubmitted(true);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    },
+  });
+
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSubmitted(true);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    mutation.mutate();
   }
 
   const today = new Date().toLocaleDateString("es-PE", {
@@ -309,8 +334,31 @@ function ComplaintsBookPage() {
           </Label>
         </div>
 
-        <Button type="submit" size="lg" className="press w-full sm:w-auto">
-          Enviar hoja de reclamación
+        {mutation.isError && (
+          <p
+            role="alert"
+            className="animate-alert-in rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          >
+            {mutation.error instanceof Error
+              ? mutation.error.message
+              : "No se pudo enviar tu hoja de reclamación."}{" "}
+            Inténtalo de nuevo o escríbenos directo a {CONTACT_EMAIL}.
+          </p>
+        )}
+
+        <Button
+          type="submit"
+          size="lg"
+          className="press w-full sm:w-auto"
+          disabled={mutation.isPending}
+        >
+          {mutation.isPending ? (
+            <span className="inline-flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" /> Enviando…
+            </span>
+          ) : (
+            "Enviar hoja de reclamación"
+          )}
         </Button>
 
         <div className="space-y-2 border-t border-border pt-4 text-xs text-muted-foreground">

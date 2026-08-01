@@ -10,6 +10,7 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 
 import appCss from "../styles.css?url";
@@ -25,6 +26,7 @@ import {
   capturedAuthHasSession,
   translateHashAuthError,
 } from "@/lib/auth-redirect";
+import { sendWelcomeEmail } from "@/lib/welcome-email.functions";
 
 function NotFoundComponent() {
   return (
@@ -168,6 +170,7 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
   const navigate = useNavigate();
+  const sendWelcomeFn = useServerFn(sendWelcomeEmail);
   // Modo examen en pantalla completa: sin header/footer/banner para inmersión
   // total mientras el estudiante rinde (ver plan-modo-examen-fullscreen.md).
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -247,6 +250,13 @@ function RootComponent() {
 
     if (type === "signup" || type === "email_change" || type === "invite") {
       toast.success("¡Correo confirmado! Tu cuenta ya está activa.");
+    }
+    // "signup"/"invite" mean a brand-new account just got confirmed — the
+    // server-side claim on welcome_email_sent_at makes this safe to call even
+    // if another flow already sent it (e.g. the account also has a Google
+    // identity that logged in first).
+    if (type === "signup" || type === "invite") {
+      sendWelcomeFn().catch(() => {});
     }
 
     let cancelled = false;

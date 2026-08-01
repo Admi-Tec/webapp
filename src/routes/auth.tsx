@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +10,7 @@ import { toast } from "sonner";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { pageMeta } from "@/lib/site";
 import { isValidEmailFormat, translateAuthError } from "@/lib/auth-error-messages";
+import { sendWelcomeEmail } from "@/lib/welcome-email.functions";
 
 export const Route = createFileRoute("/auth")({
   head: () =>
@@ -46,6 +48,7 @@ function GoogleLogo({ className }: { className?: string }) {
 
 function AuthPage() {
   const navigate = useNavigate();
+  const sendWelcome = useServerFn(sendWelcomeEmail);
   const [mode, setMode] = useState<"auth" | "forgot">("auth");
   const [tab, setTab] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
@@ -116,6 +119,9 @@ function AuthPage() {
         if (error) throw error;
         if (data.session) {
           toast.success("Cuenta creada", { description: "Ya puedes empezar a practicar." });
+          // Sin confirmación por correo de por medio, la cuenta ya está activa
+          // ahora mismo — dispara la bienvenida sin bloquear la navegación.
+          sendWelcome().catch(() => {});
           navigate({ to: "/panel", replace: true });
         } else {
           setInfo("Cuenta creada. Revisa tu correo para confirmarla antes de ingresar.");
@@ -209,6 +215,11 @@ function AuthPage() {
         localStorage.removeItem("matepre_google_auth_success");
         window.clearInterval(pollTimer);
         if (!popup.closed) popup.close();
+        // Await (swallowing errors) so the request has a chance to complete
+        // before the full-page reload below tears down this JS context — the
+        // server-side claim on welcome_email_sent_at makes this a safe no-op
+        // if it already went out from another flow.
+        await sendWelcome().catch(() => {});
         window.location.assign("/panel");
         return;
       }
@@ -225,6 +236,7 @@ function AuthPage() {
       if (sessionData.session) {
         window.clearInterval(pollTimer);
         if (!popup.closed) popup.close();
+        await sendWelcome().catch(() => {});
         // Full reload (not the SPA router) so this window's own Supabase client
         // re-initializes and picks up the session the popup just persisted.
         window.location.assign("/panel");

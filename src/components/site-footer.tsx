@@ -1,12 +1,22 @@
 import { Link } from "@tanstack/react-router";
 import { BookOpenText, Mail } from "lucide-react";
-import { CONTACT_EMAIL, SITE_NAME, SOCIAL_LINKS } from "@/lib/site";
+import { SITE_NAME, SOCIAL_LINKS } from "@/lib/site";
 import { InstagramIcon, TikTokIcon, WhatsAppIcon } from "@/components/social-icons";
+import { ContactDialog } from "@/components/contact-dialog";
 
 const SOCIALS = [
-  { label: "Instagram", href: SOCIAL_LINKS.instagram, Icon: InstagramIcon },
-  { label: "TikTok", href: SOCIAL_LINKS.tiktok, Icon: TikTokIcon },
-  { label: "WhatsApp", href: SOCIAL_LINKS.whatsapp, Icon: WhatsAppIcon },
+  {
+    label: "Instagram",
+    href: SOCIAL_LINKS.instagram,
+    Icon: InstagramIcon,
+    iconClassName: "",
+  },
+  {
+    label: "WhatsApp",
+    href: SOCIAL_LINKS.whatsapp,
+    Icon: WhatsAppIcon,
+    iconClassName: "text-[#25D366]",
+  },
 ];
 
 export function SiteFooter() {
@@ -29,12 +39,14 @@ export function SiteFooter() {
           <p className="text-sm font-semibold text-foreground">Contacto</p>
           <ul className="mt-3 space-y-2 text-sm">
             <li>
-              <a
-                href={`mailto:${CONTACT_EMAIL}`}
-                className="inline-flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
-              >
-                <Mail className="h-4 w-4" aria-hidden /> Contáctanos
-              </a>
+              <ContactDialog>
+                <button
+                  type="button"
+                  className="inline-flex cursor-pointer items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  <Mail className="h-4 w-4" aria-hidden /> Contáctanos
+                </button>
+              </ContactDialog>
             </li>
             <li>
               <Link
@@ -50,7 +62,7 @@ export function SiteFooter() {
         <div>
           <p className="text-sm font-semibold text-foreground">Síguenos</p>
           <ul className="mt-3 flex gap-3">
-            {SOCIALS.map(({ label, href, Icon }) => (
+            {SOCIALS.map(({ label, href, Icon, iconClassName }) => (
               <li key={label}>
                 <a
                   href={href}
@@ -58,9 +70,9 @@ export function SiteFooter() {
                   rel="noopener noreferrer"
                   aria-label={label}
                   title={label}
-                  className="grid h-10 w-10 place-items-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+                  className="grid h-10 w-10 place-items-center rounded-full border border-border bg-card transition-colors hover:border-primary/40"
                 >
-                  <Icon className="h-5 w-5" />
+                  <Icon className={`h-5 w-5 ${iconClassName}`} />
                 </a>
               </li>
             ))}

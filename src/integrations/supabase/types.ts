@@ -663,6 +663,7 @@ export type Database = {
           weekly_goal_exams: number;
           weekly_goal_questions: number;
           weekly_study_hours: number | null;
+          welcome_email_sent_at: string | null;
         };
         Insert: {
           avatar_url?: string | null;
@@ -684,6 +685,7 @@ export type Database = {
           weekly_goal_exams?: number;
           weekly_goal_questions?: number;
           weekly_study_hours?: number | null;
+          welcome_email_sent_at?: string | null;
         };
         Update: {
           avatar_url?: string | null;
@@ -705,6 +707,7 @@ export type Database = {
           weekly_goal_exams?: number;
           weekly_goal_questions?: number;
           weekly_study_hours?: number | null;
+          welcome_email_sent_at?: string | null;
         };
         Relationships: [];
       };
