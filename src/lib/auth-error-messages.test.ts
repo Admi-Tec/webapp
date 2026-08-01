@@ -70,6 +70,18 @@ describe("translateAuthError", () => {
     ).toBe("La nueva contraseña debe ser distinta a la actual.");
   });
 
+  it("contraseña actual incorrecta al actualizar (current_password_invalid)", () => {
+    expect(translateAuthError({ code: "current_password_invalid" })).toBe(
+      "Tu contraseña actual no es correcta.",
+    );
+  });
+
+  it("falta la contraseña actual al actualizar (current_password_required)", () => {
+    expect(translateAuthError({ code: "current_password_required" })).toBe(
+      "Ingresa tu contraseña actual.",
+    );
+  });
+
   it("error sin código ni mapeo conocido: usa el mensaje crudo", () => {
     expect(translateAuthError({ message: "Algo raro pasó" })).toBe("Algo raro pasó");
   });

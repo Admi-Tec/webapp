@@ -53,6 +53,12 @@ export function translateAuthError(err: unknown): string {
   if (code === "same_password" || m.includes("different from the old password")) {
     return "La nueva contraseña debe ser distinta a la actual.";
   }
+  if (code === "current_password_invalid") {
+    return "Tu contraseña actual no es correcta.";
+  }
+  if (code === "current_password_required") {
+    return "Ingresa tu contraseña actual.";
+  }
   return msg || "Algo salió mal. Inténtalo de nuevo.";
 }
 

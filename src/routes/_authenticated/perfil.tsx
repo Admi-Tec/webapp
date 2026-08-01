@@ -130,7 +130,6 @@ function PerfilPage() {
   // Password change: only offered to accounts that actually have an email/password
   // identity — an account created purely via "Continuar con Google" has none.
   const [identityProviders, setIdentityProviders] = useState<string[] | null>(null);
-  const [accountEmail, setAccountEmail] = useState<string | null>(null);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
@@ -142,7 +141,6 @@ function PerfilPage() {
   useEffect(() => {
     supabase.auth.getUser().then(({ data: userData }) => {
       setIdentityProviders((userData.user?.identities ?? []).map((i) => i.provider));
-      setAccountEmail(userData.user?.email ?? null);
     });
   }, []);
 
@@ -161,19 +159,18 @@ function PerfilPage() {
       flashPasswordFeedback("refused");
       return;
     }
-    if (!accountEmail) {
-      setPasswordError("No se pudo verificar tu cuenta. Recarga la página e inténtalo de nuevo.");
-      flashPasswordFeedback("refused");
-      return;
-    }
     setPasswordBusy(true);
     try {
-      const { error: verifyError } = await supabase.auth.signInWithPassword({
-        email: accountEmail,
-        password: currentPassword,
+      // El proveedor Email tiene activado "Require current password when
+      // updating" en el dashboard de Supabase, así que GoTrue valida
+      // current_password server-side — no hace falta verificarla nosotros
+      // con un signInWithPassword aparte (eso disparaba un SIGNED_IN global
+      // y forzaba router.invalidate() + queryClient.invalidateQueries() en
+      // toda la app solo para cambiar una contraseña).
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword,
+        current_password: currentPassword,
       });
-      if (verifyError) throw new Error("Tu contraseña actual no es correcta.");
-      const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
       if (updateError) throw updateError;
       toast.success("Contraseña actualizada.");
       flashPasswordFeedback("accepted");
