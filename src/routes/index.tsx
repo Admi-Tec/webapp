@@ -33,7 +33,7 @@ import { useBetaStatus } from "@/hooks/use-beta-status";
 import { useCornerRibbon } from "@/hooks/use-corner-ribbon";
 import { fireConfetti } from "@/lib/confetti";
 import { pageMeta, SITE_NAME, SITE_DESCRIPTION } from "@/lib/site";
-import { PLAN_PRICES, TRIAL_DAYS } from "@/lib/plan";
+import { PLAN_PRICES, PREMIUM_FEATURES, TRIAL_DAYS } from "@/lib/plan";
 
 // Lazy, not a static import: AnswerSheetWidget pulls in KaTeX (@/lib/math-render)
 // to render the daily exercise's math — ~130KB gzipped, the single heaviest
@@ -743,22 +743,22 @@ function Index() {
         >
           <Banknote className="h-[22rem] w-[22rem]" strokeWidth={1} />
         </div>
-        <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 sm:py-20 lg:grid-cols-[1.15fr_1fr]">
+        <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 sm:py-24 lg:grid-cols-[1.15fr_1fr]">
           <div>
             <span className="font-data text-[0.7rem] font-bold uppercase tracking-[0.14em]">
               Planes y precios
             </span>
-            <h2 className="mt-3 max-w-xl text-balance text-[clamp(1.5rem,1.3rem+1.2vw,2.25rem)] font-bold tracking-[-0.03em]">
+            <h2 className="mt-3 max-w-xl text-balance text-[clamp(1.75rem,1.5rem+1.2vw,2.75rem)] font-bold tracking-[-0.03em]">
               Empieza gratis. Premium te dice si hoy ingresarías.
             </h2>
-            <p className="mt-3 max-w-lg text-pretty font-medium text-primary-foreground/85">
+            <p className="mt-4 max-w-lg text-pretty text-lg font-medium text-primary-foreground/85">
               El plan gratuito es tuyo para siempre. Premium te da lo que de verdad decide una
               admisión.
             </p>
             <Button
               asChild
               size="lg"
-              className="press cta-overshoot mt-6 min-h-11 bg-background text-foreground hover:bg-background/90"
+              className="press cta-overshoot mt-8 min-h-12 px-8 text-base bg-background text-foreground hover:bg-background/90"
             >
               <Link to="/planes">
                 Ver planes y precios <ArrowRight className="ml-2 h-4 w-4" />
@@ -772,7 +772,7 @@ function Index() {
               a las esquinas redondeadas de la tarjeta. */}
           <div
             ref={priceCardRef}
-            className="relative overflow-hidden rounded-lg bg-background p-6 text-foreground shadow-[0_8px_8px_-4px_rgba(15,23,42,0.45)] sm:p-8"
+            className="relative overflow-hidden rounded-lg bg-background p-8 text-foreground shadow-[0_8px_8px_-4px_rgba(15,23,42,0.45)] sm:p-10"
           >
             {/* Cinta diagonal (solo durante la beta): el precio se sigue
                 mostrando tal cual — para que el estudiante vea que Premium
@@ -795,26 +795,22 @@ function Index() {
                 Gratis por tiempo limitado
               </div>
             )}
-            <p className="font-data text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+            <p className="font-data text-sm font-semibold uppercase tracking-[0.12em] text-muted-foreground">
               Premium desde
             </p>
-            <p className="font-data mt-2 text-5xl font-bold tabular-nums">
+            <p className="font-data mt-3 text-6xl font-bold tabular-nums">
               S/ {PLAN_PRICES.quarterly.monthlyEquivalent.split(".")[0]}
-              <span className="text-2xl">
+              <span className="text-3xl">
                 .{PLAN_PRICES.quarterly.monthlyEquivalent.split(".")[1]}
               </span>{" "}
-              <span className="text-base font-normal text-muted-foreground">/ mes</span>
+              <span className="text-lg font-normal text-muted-foreground">/ mes</span>
             </p>
-            <p className="mt-1.5 text-sm text-muted-foreground">con el plan trimestral</p>
-            <ul className="mt-5 space-y-2.5 border-t border-border pt-5 text-sm">
-              {[
-                "Exámenes oficiales de admisión completos",
-                "Simulacros ilimitados de tu universidad",
-                "Ranking completo frente a otros postulantes",
-              ].map((f) => (
-                <li key={f} className="flex items-start gap-2.5">
+            <p className="mt-2 text-base text-muted-foreground">con el plan trimestral</p>
+            <ul className="mt-6 space-y-3.5 border-t border-border pt-6 text-base">
+              {PREMIUM_FEATURES.slice(0, 4).map((f) => (
+                <li key={f} className="flex items-start gap-3">
                   <Check
-                    className="mt-0.5 h-4 w-4 shrink-0 text-success"
+                    className="mt-0.5 h-5 w-5 shrink-0 text-success"
                     strokeWidth={3}
                     aria-hidden
                   />

@@ -4,6 +4,18 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Reserve the scrollbar's width at all times, whether or not the page is
+   currently tall enough to need one. Without this, anything that grows the
+   page past the viewport height (opening a FAQ item, a validation error
+   appearing, a dropdown) makes a scrollbar appear mid-interaction, which
+   shrinks the usable width and visibly shifts every mx-auto/max-w-* container
+   on the page — reads as "the content's width changed" when really the
+   viewport did. Supported in every evergreen browser; unsupported ones just
+   keep the old (shifting) behavior, no regression either way. */
+html {
+  scrollbar-gutter: stable;
+}
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
