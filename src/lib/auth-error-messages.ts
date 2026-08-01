@@ -1,6 +1,7 @@
-// Mapea errores crudos de Supabase Auth (signUp/signInWithPassword/OAuth) a
-// mensajes en español para el formulario de /auth. Sin imports de Supabase/
-// server aquí, así que puede testearse directo — ver auth-error-messages.test.ts.
+// Mapea errores crudos de Supabase Auth (signUp/signInWithPassword/OAuth/
+// updateUser) a mensajes en español para los formularios de /auth y /perfil.
+// Sin imports de Supabase/server aquí, así que puede testearse directo — ver
+// auth-error-messages.test.ts.
 export function translateAuthError(err: unknown): string {
   const e = err as { code?: string; error_code?: string; message?: string } | null | undefined;
   const code: string | undefined = e?.code ?? e?.error_code;
@@ -48,6 +49,9 @@ export function translateAuthError(err: unknown): string {
   }
   if (m.includes("password should be at least")) {
     return "La contraseña es demasiado corta. Usa al menos 8 caracteres.";
+  }
+  if (code === "same_password" || m.includes("different from the old password")) {
+    return "La nueva contraseña debe ser distinta a la actual.";
   }
   return msg || "Algo salió mal. Inténtalo de nuevo.";
 }

@@ -30,6 +30,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useSaveFeedback } from "@/hooks/use-save-feedback";
 import { DeleteAccountButton } from "@/components/delete-account-button";
+import { translateAuthError } from "@/lib/auth-error-messages";
 import { pageMeta } from "@/lib/site";
 
 const PREP_TIME_OPTIONS: Array<{ value: (typeof PREP_TIME_VALUES)[number]; label: string }> = [
@@ -180,7 +181,7 @@ function PerfilPage() {
       setNewPassword("");
       setConfirmNewPassword("");
     } catch (err) {
-      const friendly = err instanceof Error ? err.message : "No se pudo cambiar la contraseña.";
+      const friendly = translateAuthError(err);
       setPasswordError(friendly);
       toast.error(friendly);
       flashPasswordFeedback("refused");

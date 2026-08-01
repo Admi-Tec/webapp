@@ -58,6 +58,18 @@ describe("translateAuthError", () => {
     );
   });
 
+  it("nueva contraseña igual a la actual (código)", () => {
+    expect(translateAuthError({ code: "same_password" })).toBe(
+      "La nueva contraseña debe ser distinta a la actual.",
+    );
+  });
+
+  it("nueva contraseña igual a la actual (mensaje crudo de Supabase)", () => {
+    expect(
+      translateAuthError({ message: "New password should be different from the old password." }),
+    ).toBe("La nueva contraseña debe ser distinta a la actual.");
+  });
+
   it("error sin código ni mapeo conocido: usa el mensaje crudo", () => {
     expect(translateAuthError({ message: "Algo raro pasó" })).toBe("Algo raro pasó");
   });
