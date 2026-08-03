@@ -210,7 +210,7 @@ function RootComponent() {
       const message = translateHashAuthError(capturedAuthParams);
       if (isPopup) {
         try {
-          localStorage.setItem("matepre_google_auth_error", message);
+          localStorage.setItem("admitec_google_auth_error", message);
         } catch {
           // ignore — the opener's popup.closed poll still catches this
         }
@@ -230,7 +230,7 @@ function RootComponent() {
       // session never actually reaches localStorage and the opener sees nothing.
       supabase.auth.getSession().then(({ data }) => {
         try {
-          if (data.session) localStorage.setItem("matepre_google_auth_success", "1");
+          if (data.session) localStorage.setItem("admitec_google_auth_success", "1");
         } catch {
           // ignore — the opener's own getSession() fallback poll still catches this
         }

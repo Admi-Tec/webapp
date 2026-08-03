@@ -167,7 +167,7 @@ function AuthPage() {
     const top = Math.max(0, Math.round(window.screenY + (window.outerHeight - height) / 2));
     const popup = window.open(
       "about:blank",
-      "matepre-google-auth",
+      "admitec-google-auth",
       `width=${width},height=${height},left=${left},top=${top}`,
     );
 
@@ -203,14 +203,14 @@ function AuthPage() {
     // that can sever window.opener once the popup navigates away and back, so the popup
     // can't always reliably signal us directly. Poll shared localStorage + the session
     // instead — both survive regardless of COOP.
-    localStorage.removeItem("matepre_google_auth_error");
-    localStorage.removeItem("matepre_google_auth_success");
+    localStorage.removeItem("admitec_google_auth_error");
+    localStorage.removeItem("admitec_google_auth_success");
     popup.location.href = url;
 
     const pollTimer = window.setInterval(async () => {
-      const errorMessage = localStorage.getItem("matepre_google_auth_error");
+      const errorMessage = localStorage.getItem("admitec_google_auth_error");
       if (errorMessage) {
-        localStorage.removeItem("matepre_google_auth_error");
+        localStorage.removeItem("admitec_google_auth_error");
         window.clearInterval(pollTimer);
         if (!popup.closed) popup.close();
         setFormError(errorMessage);
@@ -221,8 +221,8 @@ function AuthPage() {
       }
       // Primary success signal: the popup itself confirmed (via its own getSession(),
       // which awaits full client init) that the session was persisted before closing.
-      if (localStorage.getItem("matepre_google_auth_success")) {
-        localStorage.removeItem("matepre_google_auth_success");
+      if (localStorage.getItem("admitec_google_auth_success")) {
+        localStorage.removeItem("admitec_google_auth_success");
         window.clearInterval(pollTimer);
         if (!popup.closed) popup.close();
         // Await (swallowing errors) so the request has a chance to complete
