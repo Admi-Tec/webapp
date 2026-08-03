@@ -19,7 +19,7 @@ export async function sendBrevoEmail(opts: {
       Accept: "application/json",
     },
     body: JSON.stringify({
-      sender: { email: APP_SENDER_EMAIL, name: "App Admi-Tec" },
+      sender: { email: APP_SENDER_EMAIL, name: "Admi-Tec" },
       to: [opts.to],
       ...(opts.replyTo ? { replyTo: opts.replyTo } : {}),
       subject: opts.subject,

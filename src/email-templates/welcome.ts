@@ -17,7 +17,7 @@ export function buildWelcomeEmail(data: { fullName: string | null }): {
   });
 
   return {
-    subject: "Bienvenido a Admi-Tec — tu cuenta ya está lista",
+    subject: "¡Bienvenido a Admi-Tec! Tu cuenta ya está lista",
     html,
   };
 }
