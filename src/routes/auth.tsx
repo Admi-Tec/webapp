@@ -127,7 +127,12 @@ function AuthPage() {
           // Sin confirmación por correo de por medio, la cuenta ya está activa
           // ahora mismo — dispara la bienvenida sin bloquear la navegación.
           sendWelcome().catch(() => {});
-          navigate({ to: "/panel", replace: true });
+          // Directo a /onboarding (no /panel): es una cuenta recién creada, así
+          // que el onboarding nunca está completo todavía — navegar a /panel
+          // solo hacía que el beforeLoad de _authenticated redirigiera de
+          // inmediato a /onboarding, y ese salto adicional en plena navegación
+          // por SPA era lo que dejaba la página en blanco hasta refrescar.
+          navigate({ to: "/onboarding", replace: true });
         } else {
           setInfo("Cuenta creada. Revisa tu correo para confirmarla antes de ingresar.");
           toast.success("Revisa tu correo para confirmar la cuenta.");

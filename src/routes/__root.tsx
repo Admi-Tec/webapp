@@ -239,8 +239,14 @@ function RootComponent() {
       return;
     }
 
-    // Email confirmation / magic link / invite carry a `type`; a plain OAuth (Google) login
-    // doesn't, so only show the "confirmed" toast for the former and stay silent for the latter.
+    // Email confirmation / magic link / invite carry a `type` on the hash (implicit
+    // flow), but GoTrue's PKCE redirect — what this app actually uses (see
+    // client.ts's flowType: "pkce") — only ever appends `?code=...`, never `type`.
+    // Gating on `type` here used to silently skip both the toast and the welcome
+    // email for the normal confirm-by-link signup path, since `type` was always
+    // null for it. Google OAuth never reaches this branch (it's handled entirely
+    // in the popup above), so any non-recovery session landing here is genuinely
+    // a signup/invite/email-change confirmation.
     const type = capturedAuthParams.get("type");
 
     // Password recovery gets its own dedicated flow: /restablecer-password reads this
@@ -248,23 +254,26 @@ function RootComponent() {
     // them as "logged in normally". Don't race it by auto-redirecting to /panel here.
     if (type === "recovery") return;
 
-    if (type === "signup" || type === "email_change" || type === "invite") {
-      toast.success("¡Correo confirmado! Tu cuenta ya está activa.");
-    }
-    // "signup"/"invite" mean a brand-new account just got confirmed — the
-    // server-side claim on welcome_email_sent_at makes this safe to call even
-    // if another flow already sent it (e.g. the account also has a Google
-    // identity that logged in first).
-    if (type === "signup" || type === "invite") {
-      sendWelcomeFn().catch(() => {});
-    }
+    toast.success("¡Correo confirmado! Tu cuenta ya está activa.");
+    // The server-side claim on welcome_email_sent_at makes this safe to call
+    // unconditionally even if another flow already sent it (e.g. the account
+    // also has a Google identity that logged in first).
+    sendWelcomeFn().catch(() => {});
 
+    // Navigate straight to /onboarding instead of /panel: this is always a
+    // brand-new signup/invite confirming their email, so onboarding is never
+    // already done — going to /panel first only means _authenticated's
+    // beforeLoad immediately throws a redirect back to /onboarding anyway,
+    // and that extra client-side redirect-during-navigate hop is what left
+    // the page blank until a manual refresh. (onboarding.tsx itself still
+    // bounces back to /panel if onboarding somehow turns out to be already
+    // complete, so this stays safe for the email-change confirmation case.)
     let cancelled = false;
     supabase.auth.getSession().then(({ data }) => {
-      if (!cancelled && data.session) navigate({ to: "/panel", replace: true });
+      if (!cancelled && data.session) navigate({ to: "/onboarding", replace: true });
     });
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_IN" && session) navigate({ to: "/panel", replace: true });
+      if (event === "SIGNED_IN" && session) navigate({ to: "/onboarding", replace: true });
     });
     return () => {
       cancelled = true;
