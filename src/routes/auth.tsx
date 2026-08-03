@@ -12,6 +12,11 @@ import { pageMeta } from "@/lib/site";
 import { isValidEmailFormat, translateAuthError } from "@/lib/auth-error-messages";
 import { sendWelcomeEmail } from "@/lib/welcome-email.functions";
 
+// Login con Google desactivado temporalmente en la UI. La lógica (handleGoogle,
+// GoogleLogo, callback de popup) se deja intacta para reactivarlo más adelante
+// con solo poner esto en `true`.
+const GOOGLE_LOGIN_ENABLED = false;
+
 export const Route = createFileRoute("/auth")({
   head: () =>
     pageMeta({
@@ -427,25 +432,29 @@ function AuthPage() {
               </form>
             </Tabs>
 
-            <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-wider text-muted-foreground">
-              <span className="h-px flex-1 bg-border" />
-              o
-              <span className="h-px flex-1 bg-border" />
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              className="press w-full min-h-11"
-              disabled={busy}
-              onClick={handleGoogle}
-            >
-              {pendingAction === "google" ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <GoogleLogo className="mr-2 h-4 w-4" />
-              )}
-              Continuar con Google
-            </Button>
+            {GOOGLE_LOGIN_ENABLED && (
+              <>
+                <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-wider text-muted-foreground">
+                  <span className="h-px flex-1 bg-border" />
+                  o
+                  <span className="h-px flex-1 bg-border" />
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="press w-full min-h-11"
+                  disabled={busy}
+                  onClick={handleGoogle}
+                >
+                  {pendingAction === "google" ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <GoogleLogo className="mr-2 h-4 w-4" />
+                  )}
+                  Continuar con Google
+                </Button>
+              </>
+            )}
           </>
         )}
       </div>

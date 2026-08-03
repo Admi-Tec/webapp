@@ -186,7 +186,10 @@ function TakeExam() {
   }, [answers, flagged, saveFn, sessionId]);
 
   const answered = useMemo(() => Object.keys(answers).length, [answers]);
-  const topicGroups = useMemo(() => groupQuestionsByTopic(questions), [questions]);
+  const topicGroups = useMemo(
+    () => groupQuestionsByTopic(questions, q.data?.topicOrder ?? []),
+    [questions, q.data?.topicOrder],
+  );
 
   if (q.isLoading || !session)
     return (

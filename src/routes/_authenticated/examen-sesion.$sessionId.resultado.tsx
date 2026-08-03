@@ -106,8 +106,8 @@ function ResultPage() {
     enabled: isPremium,
   });
   const topicGroups = useMemo(
-    () => groupQuestionsByTopic(q.data?.questions ?? []),
-    [q.data?.questions],
+    () => groupQuestionsByTopic(q.data?.questions ?? [], q.data?.topicOrder ?? []),
+    [q.data?.questions, q.data?.topicOrder],
   );
   const [imgUrls, setImgUrls] = useState<Record<string, string>>({});
   useEffect(() => {

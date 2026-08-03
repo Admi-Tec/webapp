@@ -71,7 +71,7 @@ type ExamSessionWithExamRow = Tables<"exam_sessions"> & {
 type ExerciseQuestionRow = Pick<
   Tables<"exercises">,
   "id" | "statement_md" | "statement_image_path" | "choices"
-> & { topic: Pick<Tables<"topics">, "name"> | null };
+> & { topic: Pick<Tables<"topics">, "id" | "name"> | null };
 
 type TemplateSessionRow = Pick<
   Tables<"exam_sessions">,
@@ -100,7 +100,7 @@ type ExerciseResultRow = Pick<
   | "correct_choice"
   | "solution_md"
   | "expected_time_ms"
-> & { topic: Pick<Tables<"topics">, "name"> | null };
+> & { topic: Pick<Tables<"topics">, "id" | "name"> | null };
 
 function publicClient() {
   return createClient<Database>(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
@@ -430,8 +430,13 @@ export const startExamSession = createServerFn({ method: "POST" })
         }
         questionIds.push(...pickTemplateQuestions(ids, seen, rule.question_count));
       }
-      // template exams always shuffle across all rules
-      questionIds = defaultShuffle(questionIds);
+      // Each rule's own questions are already picked in random order
+      // (pickTemplateQuestions shuffles its pool internally) — we no longer
+      // shuffle *across* rules on top of that, so a rule's questions stay
+      // together as one contiguous block matching the admin's configured
+      // topic order (see exam_template_rules.position / topicOrder in
+      // getExamSession) instead of being interleaved with other topics'
+      // questions under scattered, non-consecutive numbers in the nav panel.
     } else {
       const { data: eqs, error: eqErr } = await supabase
         .from("exam_questions")
@@ -532,12 +537,31 @@ export const getExamSession = createServerFn({ method: "GET" })
     if (ids.length) {
       const { data: exs } = await supabase
         .from("exercises")
-        .select("id, statement_md, statement_image_path, choices, topic:topics(name)")
+        .select("id, statement_md, statement_image_path, choices, topic:topics(id, name)")
         .in("id", ids);
       const byId = new Map(((exs ?? []) as ExerciseQuestionRow[]).map((e) => [e.id, e]));
       questions = ids.map((id) => byId.get(id)).filter((q): q is ExerciseQuestionRow => !!q);
     }
-    return { session, questions };
+
+    // Simulacros (templates) always shuffle their questions (see
+    // startExamSession), so grouping by "first shuffled appearance" scrambles
+    // the topic order the admin actually configured. exam_template_rules is
+    // the source of that order (its `position`, set when the admin built the
+    // template) — standard exams have no rows here, so topicOrder is simply
+    // empty and the nav panel falls back to appearance order, unchanged.
+    const { data: ruleRows } = typedSession.exam_id
+      ? await supabase
+          .from("exam_template_rules")
+          .select("topic_id, position")
+          .eq("exam_id", typedSession.exam_id)
+          .order("position")
+      : { data: [] as Pick<Tables<"exam_template_rules">, "topic_id" | "position">[] };
+    const topicOrder: string[] = [];
+    (ruleRows ?? []).forEach((r) => {
+      if (!topicOrder.includes(r.topic_id)) topicOrder.push(r.topic_id);
+    });
+
+    return { session, questions, topicOrder };
   });
 
 export const saveExamAnswers = createServerFn({ method: "POST" })
@@ -660,7 +684,8 @@ export const submitExamSession = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     if (attemptInserts.length) {
-      await supabaseAdmin.from("attempts").insert(attemptInserts);
+      const { error: attemptsErr } = await supabaseAdmin.from("attempts").insert(attemptInserts);
+      if (attemptsErr) throw new Error(attemptsErr.message);
     }
 
     const total = ids.length;
@@ -670,7 +695,11 @@ export const submitExamSession = createServerFn({ method: "POST" })
       examPoints,
     );
 
-    await supabaseAdmin
+    // .select().single() so a failed/0-row update (RLS, race with a concurrent
+    // submit, stale id, ...) throws here instead of returning as if the
+    // session had been graded — the client's try/catch surfaces it and the
+    // session stays retriable instead of being stuck "in_progress" forever.
+    const { error: updateErr } = await supabaseAdmin
       .from("exam_sessions")
       .update({
         status: "graded",
@@ -683,7 +712,10 @@ export const submitExamSession = createServerFn({ method: "POST" })
         empty_count: emptyCount,
         max_score: maxScore,
       })
-      .eq("id", session.id);
+      .eq("id", session.id)
+      .select("id")
+      .single();
+    if (updateErr) throw new Error(updateErr.message);
 
     return { score, total, correctCount, incorrectCount, emptyCount, maxScore };
   });
@@ -725,21 +757,38 @@ export const getExamResult = createServerFn({ method: "GET" })
     // exs/sessionAttempts/avgRows are three independent reads (none depends
     // on another's result) — previously exs was awaited alone before the
     // other two, an extra round-trip for nothing.
-    const [{ data: exs }, { data: sessionAttempts }, { data: avgRows }] = await Promise.all([
-      supabase
-        .from("exercises")
-        .select(
-          "id, statement_md, statement_image_path, choices, correct_choice, solution_md, expected_time_ms, topic:topics(name)",
-        )
-        .in("id", ids),
-      supabase
-        .from("attempts")
-        .select("exercise_id, time_spent_ms")
-        .eq("exam_session_id", data.sessionId),
-      ids.length > 0
-        ? supabase.rpc("get_exercise_avg_times", { _exercise_ids: ids })
-        : Promise.resolve({ data: [] as { avg_time_ms: number; exercise_id: string }[] }),
-    ]);
+    const [{ data: exs }, { data: sessionAttempts }, { data: avgRows }, { data: ruleRows }] =
+      await Promise.all([
+        supabase
+          .from("exercises")
+          .select(
+            "id, statement_md, statement_image_path, choices, correct_choice, solution_md, expected_time_ms, topic:topics(id, name)",
+          )
+          .in("id", ids),
+        supabase
+          .from("attempts")
+          .select("exercise_id, time_spent_ms")
+          .eq("exam_session_id", data.sessionId),
+        ids.length > 0
+          ? supabase.rpc("get_exercise_avg_times", { _exercise_ids: ids })
+          : Promise.resolve({ data: [] as { avg_time_ms: number; exercise_id: string }[] }),
+        // Same admin-defined topic order as getExamSession — keeps the
+        // results page's topic breakdown in the order the simulacro was
+        // configured with, not the shuffled appearance order.
+        typedSession.exam_id
+          ? supabase
+              .from("exam_template_rules")
+              .select("topic_id, position")
+              .eq("exam_id", typedSession.exam_id)
+              .order("position")
+          : Promise.resolve({
+              data: [] as Pick<Tables<"exam_template_rules">, "topic_id" | "position">[],
+            }),
+      ]);
+    const topicOrder: string[] = [];
+    (ruleRows ?? []).forEach((r) => {
+      if (!topicOrder.includes(r.topic_id)) topicOrder.push(r.topic_id);
+    });
     const byId = new Map(((exs ?? []) as ExerciseResultRow[]).map((e) => [e.id, e]));
     const timeByQuestion = new Map(
       ((sessionAttempts ?? []) as Pick<Tables<"attempts">, "exercise_id" | "time_spent_ms">[]).map(
@@ -759,5 +808,5 @@ export const getExamResult = createServerFn({ method: "GET" })
         };
       })
       .filter((q): q is NonNullable<typeof q> => q !== null);
-    return { session: typedSession, questions };
+    return { session: typedSession, questions, topicOrder };
   });
