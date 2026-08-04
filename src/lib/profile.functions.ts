@@ -121,6 +121,18 @@ export const updateFullProfile = createServerFn({ method: "POST" })
       if (existing) throw new Error("Ese pseudónimo ya está en uso. Elige otro.");
     }
 
+    if (data.leaderboardOptIn === true && !data.pseudonym) {
+      const { data: currentProfile, error: currentProfileErr } = await supabase
+        .from("profiles")
+        .select("pseudonym")
+        .eq("id", userId)
+        .maybeSingle();
+      if (currentProfileErr) throw new Error(currentProfileErr.message);
+      if (!currentProfile?.pseudonym) {
+        throw new Error("Debes elegir un pseudónimo antes de activar la participación en el ranking.");
+      }
+    }
+
     const patch: {
       id: string;
       full_name?: string;

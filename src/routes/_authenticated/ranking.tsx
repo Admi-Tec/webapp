@@ -77,7 +77,6 @@ function RankingPage() {
           {(examsQ.data ?? []).map((e) => (
             <SelectItem key={e.id} value={e.id}>
               {e.title}
-              {e.university ? ` — ${e.university.short_name}` : ""}
             </SelectItem>
           ))}
         </SelectContent>

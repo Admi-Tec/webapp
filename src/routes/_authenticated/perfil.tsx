@@ -111,7 +111,7 @@ function PerfilPage() {
   const p0 = data?.profile;
   const [fullName, setFullName] = useState(p0?.full_name ?? "");
   const [pseudonym, setPseudonym] = useState(p0?.pseudonym ?? "");
-  const [leaderboardOptIn, setLeaderboardOptIn] = useState(p0?.leaderboard_opt_in ?? true);
+  const [leaderboardOptIn, setLeaderboardOptIn] = useState(p0?.leaderboard_opt_in ?? false);
   const [weeklyGoalQuestions, setWeeklyGoalQuestions] = useState<number | "">(
     p0?.weekly_goal_questions ?? 50,
   );
@@ -189,6 +189,14 @@ function PerfilPage() {
 
   function toggleWeakTopic(id: string) {
     setWeakTopicIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
+  }
+
+  function handleLeaderboardOptInChange(value: boolean) {
+    if (value && !pseudonym.trim()) {
+      toast.error("Debes elegir un pseudónimo antes de activar tu participación en el ranking.");
+      return;
+    }
+    setLeaderboardOptIn(value);
   }
 
   function addUniversityRow() {
@@ -310,7 +318,7 @@ function PerfilPage() {
           <Switch
             id="ranking-opt-in"
             checked={leaderboardOptIn}
-            onCheckedChange={setLeaderboardOptIn}
+            onCheckedChange={handleLeaderboardOptInChange}
           />
         </div>
 

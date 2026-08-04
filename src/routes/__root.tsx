@@ -260,6 +260,15 @@ function RootComponent() {
     // also has a Google identity that logged in first).
     sendWelcomeFn().catch(() => {});
 
+    // Only auto-redirect from the email-confirmation callback when the user is
+    // currently on a public/auth landing page. If the session is received while
+    // the user is already on a protected destination like /panel, preserve it
+    // and let the authenticated route guard decide if /onboarding is needed.
+    const currentPath = typeof window !== "undefined" ? window.location.pathname : "";
+    const shouldRedirectToOnboarding =
+      currentPath === "/" || currentPath === "/auth" || currentPath === "/restablecer-password";
+    if (!shouldRedirectToOnboarding) return;
+
     // Navigate straight to /onboarding instead of /panel: this is always a
     // brand-new signup/invite confirming their email, so onboarding is never
     // already done — going to /panel first only means _authenticated's
