@@ -95,7 +95,7 @@ export function PillarsSection() {
           <Target className="h-[26rem] w-[26rem]" strokeWidth={1} />
         </div>
       </div>
-      <div className="relative mx-auto max-w-6xl px-4 py-16 sm:py-24">
+      <div className="landing-section-content relative mx-auto w-full max-w-6xl px-4">
         <div className="max-w-xl">
           <h2 className="text-balance text-[clamp(1.75rem,1.5rem+1.2vw,2.5rem)] font-bold tracking-[-0.03em]">
             ¿Cómo se prepara alguien que sí va a ingresar?
@@ -108,7 +108,7 @@ export function PillarsSection() {
           </p>
         </div>
 
-        <div className="mt-12 grid gap-8 lg:grid-cols-[minmax(0,1fr)_26rem] lg:items-start lg:gap-10">
+        <div className="mt-8 grid gap-8 sm:mt-10 lg:grid-cols-[minmax(0,1fr)_26rem] lg:items-start lg:gap-10">
           {/* Centro de atención: el simulacro real — el mismo lenguaje de
               "objeto vivo" que antes llevaban las tarjetas, ahora reservado
               para lo único que importa mostrar de verdad. Tilt 3D al mouse

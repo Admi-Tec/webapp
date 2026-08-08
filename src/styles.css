@@ -165,29 +165,25 @@ html {
    history if it's ever worth revisiting). The class name stays for the
    height rule below, which never had anything to do with snap itself. */
 .snap-section {
-  /* vh first as a fallback, dvh second: if a browser doesn't recognize the
-     `dvh` unit, the whole calc() it appears in fails to parse and the
-     declaration is dropped entirely — so this has to be two separate
-     declarations, not one expression mixing both units. Browsers that don't
-     know `dvh` silently keep the vh line above; browsers that do override it
-     with the dvh line, which is what actually accounts for a mobile
-     browser's collapsing address bar. */
+  /* Each landing section fills at least the visible screen below the header,
+     then grows naturally when its content needs more room. vh is the legacy
+     fallback; svh avoids jumps from mobile browser chrome while dvh gives
+     modern desktop/mobile browsers the current visible viewport. */
   min-height: calc(100vh - var(--site-header-h));
+  min-height: calc(100svh - var(--site-header-h));
   min-height: calc(100dvh - var(--site-header-h));
 }
 
-/* Por debajo de lg (celular y tablet, hasta 1023px): CADA sección forzada a
-   100dvh dejaba espacio navy vacío de sobra ahí — no solo el hero (donde la
-   foto del postulante solo aparece en lg+, sin ancho cómodo para las dos
-   columnas antes de eso), sino en general, porque el contenido de una
-   sección pensada para llenar una pantalla de escritorio casi nunca llena
-   una de celular/tablet igual de bien. Todas las secciones se acortan a su
-   contenido en ese rango; a partir de lg vuelven a 100dvh (el layout de
-   escritorio de cada una ya está balanceado para ocupar la pantalla
-   completa). */
-@media (max-width: 1023.98px) {
-  .snap-section {
-    min-height: auto;
+/* Section spacing follows the available screen height, not only its width.
+   This keeps short laptops from overflowing because they happen to be wide,
+   while phones retain comfortable touch/read spacing. */
+.landing-section-content {
+  padding-block: clamp(3rem, 8dvh, 6rem);
+}
+
+@supports not (height: 1dvh) {
+  .landing-section-content {
+    padding-block: clamp(3rem, 8vh, 6rem);
   }
 }
 

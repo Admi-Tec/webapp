@@ -365,8 +365,8 @@ function Index() {
         >
           <div className="h-[26rem] w-[26rem] rounded-full bg-success/[0.12] blur-[110px]" />
         </div>
-        <div className="relative mx-auto grid max-w-6xl gap-8 px-4 pb-8 pt-12 sm:pb-10 sm:pt-16 lg:grid-cols-[1.2fr_1fr] lg:items-start lg:gap-12 lg:pb-12 lg:pt-20">
-          <div>
+        <div className="relative mx-auto grid w-full max-w-6xl flex-1 gap-8 px-4 pb-8 pt-12 sm:pb-10 sm:pt-16 lg:grid-cols-[1.2fr_1fr] lg:items-stretch lg:gap-12 lg:pb-0 lg:pt-0">
+          <div className="lg:self-center lg:py-10">
             <h1 className="text-balance text-[clamp(2.5rem,1.9rem+3.2vw,4.5rem)] font-bold leading-[1.02] tracking-[-0.03em]">
               <StaggeredWords text="Cuando llegues a tu examen," startIndex={0} />{" "}
               <span className="text-primary">
@@ -417,7 +417,7 @@ function Index() {
               grilla tiene espacio para ponerlo junto al texto (lg+). Debajo
               de eso el texto manda solo — nunca se apila la foto bajo la
               copy en celulares/tablets. */}
-          <div className="relative mx-auto hidden w-full max-w-[24rem] items-end justify-center lg:-mb-16 lg:flex">
+          <div className="relative mx-auto hidden w-full max-w-[24rem] items-end justify-center lg:flex lg:self-end">
             {/* Único destello ámbar detrás del postulante: respira lento
                 (mismo animate-glow que el widget del reto del día) para
                 darle dinamismo sin la línea de contorno que antes lo
@@ -515,7 +515,7 @@ function Index() {
         >
           <Compass className="h-[24rem] w-[24rem]" strokeWidth={1} />
         </div>
-        <div className="relative mx-auto max-w-6xl px-4 py-16 sm:py-24">
+        <div className="landing-section-content relative mx-auto w-full max-w-6xl px-4">
           <div className="mx-auto max-w-xl text-center">
             <h2 className="text-balance text-[clamp(1.75rem,1.5rem+1.2vw,2.5rem)] font-bold tracking-[-0.03em]">
               No necesitas ser el mejor para empezar hoy.
@@ -536,10 +536,10 @@ function Index() {
               steps, cramming four cards into a ~640-1023px tablet width
               read as squeezed, so tablets now get one more breakpoint of
               stacked cards before the connected row appears. */}
-          <div className="mt-10 flex flex-col gap-6 lg:flex-row lg:items-stretch lg:gap-0">
+          <div className="mt-8 flex flex-col gap-4 sm:mt-10 sm:gap-6 lg:flex-row lg:items-stretch lg:gap-0">
             {START_STEPS.map((s, i) => (
               <Fragment key={s.title}>
-                <div className="group rounded-lg border border-border bg-card p-6 transition-transform duration-[350ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:-translate-y-2 lg:flex-1">
+                <div className="group rounded-lg border border-border bg-card p-5 transition-transform duration-[350ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:-translate-y-2 sm:p-6 lg:flex-1">
                   <span className="font-data grid h-9 w-9 place-items-center rounded-full bg-primary text-base font-bold text-primary-foreground transition-transform duration-[350ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:rotate-12 group-hover:scale-110">
                     {i + 1}
                   </span>
@@ -600,7 +600,7 @@ function Index() {
           aria-hidden
           className="pointer-events-none absolute -left-24 top-0 h-72 w-72 rounded-full bg-primary/10 blur-[100px]"
         />
-        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:py-24 lg:grid-cols-[1fr_1.1fr] lg:items-center">
+        <div className="landing-section-content mx-auto grid w-full max-w-6xl gap-8 px-4 sm:gap-10 lg:grid-cols-[1fr_1.1fr] lg:items-center">
           <div>
             <span className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
               <span className="inline-flex h-2 w-2 rounded-full bg-foreground/70" aria-hidden />{" "}
@@ -665,7 +665,7 @@ function Index() {
           aria-hidden
           className="pointer-events-none absolute -left-24 top-1/4 h-72 w-72 rounded-full bg-success/[0.12] blur-[100px]"
         />
-        <div className="relative mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:py-24 lg:grid-cols-[1.1fr_1fr] lg:items-center">
+        <div className="landing-section-content relative mx-auto grid w-full max-w-6xl gap-8 px-4 sm:gap-10 lg:grid-cols-[1.1fr_1fr] lg:items-center">
           <div className="lg:order-2">
             <span className="inline-flex items-center gap-2 text-sm font-semibold text-primary">
               <Trophy className="h-4 w-4" /> Ranking anónimo
@@ -702,8 +702,8 @@ function Index() {
                   className="flex items-center gap-3 border-b border-border px-5 py-3 last:border-b-0"
                 >
                   <span className="font-data w-5 text-sm text-muted-foreground">{row.rank}</span>
-                  <span className="flex-1 text-sm font-medium">{row.handle}</span>
-                  <span className="font-data text-sm font-semibold tabular-nums">
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium">{row.handle}</span>
+                  <span className="font-data shrink-0 text-sm font-semibold tabular-nums">
                     {row.score} <span className="font-normal text-muted-foreground">pts</span>
                   </span>
                 </li>
@@ -714,8 +714,10 @@ function Index() {
                     `animation` no se puede compartir entre dos clases). */}
                 <span aria-hidden className="animate-pulse-row absolute inset-0 bg-primary/5" />
                 <span className="font-data relative w-5 text-sm text-primary">27</span>
-                <span className="relative flex-1 text-sm font-medium text-primary">Tú</span>
-                <span className="font-data relative text-sm font-semibold tabular-nums text-primary">
+                <span className="relative min-w-0 flex-1 truncate text-sm font-medium text-primary">
+                  Tú
+                </span>
+                <span className="font-data relative shrink-0 text-sm font-semibold tabular-nums text-primary">
                   812 <span className="font-normal opacity-70">pts</span>
                 </span>
               </li>
@@ -743,7 +745,7 @@ function Index() {
         >
           <Banknote className="h-[22rem] w-[22rem]" strokeWidth={1} />
         </div>
-        <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 sm:py-24 lg:grid-cols-[1.15fr_1fr]">
+        <div className="landing-section-content relative mx-auto grid w-full max-w-6xl items-center gap-8 px-4 sm:gap-10 lg:grid-cols-[1.15fr_1fr]">
           <div>
             <span className="font-data text-[0.7rem] font-bold uppercase tracking-[0.14em]">
               Planes y precios
@@ -772,7 +774,7 @@ function Index() {
               a las esquinas redondeadas de la tarjeta. */}
           <div
             ref={priceCardRef}
-            className="relative overflow-hidden rounded-lg bg-background p-8 text-foreground shadow-[0_8px_8px_-4px_rgba(15,23,42,0.45)] sm:p-10"
+            className="relative overflow-hidden rounded-lg bg-background p-5 text-foreground shadow-[0_8px_8px_-4px_rgba(15,23,42,0.45)] sm:p-8 lg:p-10"
           >
             {/* Cinta diagonal (solo durante la beta): el precio se sigue
                 mostrando tal cual — para que el estudiante vea que Premium
@@ -798,12 +800,12 @@ function Index() {
             <p className="font-data text-sm font-semibold uppercase tracking-[0.12em] text-muted-foreground">
               Premium desde
             </p>
-            <p className="font-data mt-3 text-6xl font-bold tabular-nums">
+            <p className="font-data mt-3 text-[clamp(2.5rem,12vw,3.75rem)] font-bold leading-none tabular-nums">
               S/ {PLAN_PRICES.quarterly.monthlyEquivalent.split(".")[0]}
-              <span className="text-3xl">
+              <span className="text-[0.5em]">
                 .{PLAN_PRICES.quarterly.monthlyEquivalent.split(".")[1]}
               </span>{" "}
-              <span className="text-lg font-normal text-muted-foreground">/ mes</span>
+              <span className="text-[0.3em] font-normal text-muted-foreground">/ mes</span>
             </p>
             <p className="mt-2 text-base text-muted-foreground">con el plan trimestral</p>
             <ul className="mt-6 space-y-3.5 border-t border-border pt-6 text-base">
@@ -839,7 +841,7 @@ function Index() {
             <HelpCircle className="h-[24rem] w-[24rem]" strokeWidth={1} />
           </div>
         </div>
-        <div className="relative mx-auto max-w-3xl px-4 py-16 sm:py-24">
+        <div className="landing-section-content relative mx-auto w-full max-w-3xl px-4">
           <div className="max-w-xl">
             <h2 className="text-balance text-[clamp(1.75rem,1.5rem+1.2vw,2.5rem)] font-bold tracking-[-0.03em]">
               Antes de registrarte
@@ -855,7 +857,7 @@ function Index() {
               animación por completo: abre/cierra instantáneo, texto mismo
               tamaño en pregunta y respuesta (ver AccordionContent) así no
               queda ningún salto de tamaño que disimular con una animación. */}
-          <Accordion type="single" collapsible className="faq-accordion mt-10">
+          <Accordion type="single" collapsible className="faq-accordion mt-8 sm:mt-10">
             {FAQ_ITEMS.map((item, i) => (
               <AccordionItem key={item.q} value={`item-${i}`}>
                 <AccordionTrigger className="font-display text-base font-bold">
@@ -892,7 +894,7 @@ function Index() {
           aria-hidden
           className="absolute inset-0 bg-gradient-to-t from-background via-background/65 to-background/35"
         />
-        <div className="relative mx-auto flex max-w-4xl flex-col items-center gap-6 px-4 py-24 text-center">
+        <div className="landing-section-content relative mx-auto flex w-full max-w-4xl flex-col items-center gap-6 px-4 text-center">
           <div>
             <TrustPill>Únete en menos de un minuto</TrustPill>
           </div>
