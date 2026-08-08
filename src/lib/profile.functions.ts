@@ -129,7 +129,9 @@ export const updateFullProfile = createServerFn({ method: "POST" })
         .maybeSingle();
       if (currentProfileErr) throw new Error(currentProfileErr.message);
       if (!currentProfile?.pseudonym) {
-        throw new Error("Debes elegir un pseudónimo antes de activar la participación en el ranking.");
+        throw new Error(
+          "Debes elegir un pseudónimo antes de activar la participación en el ranking.",
+        );
       }
     }
 

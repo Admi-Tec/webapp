@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   capturedAuthParams,
   capturedAuthHasSession,
+  isPasswordRecoveryRedirect,
   translateHashAuthError,
 } from "@/lib/auth-redirect";
 import { pageMeta } from "@/lib/site";
@@ -25,7 +26,9 @@ export const Route = createFileRoute("/restablecer-password")({
 const linkError = capturedAuthParams?.get("error")
   ? translateHashAuthError(capturedAuthParams)
   : null;
-const isRecoveryLink = capturedAuthHasSession && capturedAuthParams?.get("type") === "recovery";
+const isRecoveryLink =
+  capturedAuthHasSession &&
+  isPasswordRecoveryRedirect("/restablecer-password", capturedAuthParams);
 
 function ResetPasswordPage() {
   const navigate = useNavigate();
@@ -34,6 +37,39 @@ function ResetPasswordPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [sessionStatus, setSessionStatus] = useState<"checking" | "ready" | "invalid">(
+    linkError || !isRecoveryLink ? "invalid" : "checking",
+  );
+
+  useEffect(() => {
+    if (linkError || !isRecoveryLink) return;
+
+    let cancelled = false;
+    const acceptSession = (hasSession: boolean) => {
+      if (!cancelled && hasSession) setSessionStatus("ready");
+    };
+
+    // getSession waits for supabase-js to finish exchanging the PKCE code. The auth
+    // listener covers slower exchanges without enabling the form prematurely.
+    supabase.auth.getSession().then(({ data, error }) => {
+      if (cancelled) return;
+      if (data.session) setSessionStatus("ready");
+      else if (error) setSessionStatus("invalid");
+    });
+    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
+      acceptSession(!!session);
+    });
+
+    const timeout = window.setTimeout(() => {
+      if (!cancelled) setSessionStatus((status) => (status === "checking" ? "invalid" : status));
+    }, 10_000);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeout);
+      subscription.subscription.unsubscribe();
+    };
+  }, []);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -64,7 +100,19 @@ function ResetPasswordPage() {
     }
   }
 
-  if (linkError || !isRecoveryLink) {
+  if (sessionStatus === "checking") {
+    return (
+      <div className="mx-auto grid min-h-[80dvh] max-w-md place-items-center px-4 py-10">
+        <div className="w-full rounded-2xl border border-border bg-card p-6 text-center shadow-sm sm:p-8">
+          <p role="status" className="text-sm text-muted-foreground">
+            Verificando tu enlace de recuperación…
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (sessionStatus === "invalid") {
     return (
       <div className="mx-auto grid min-h-[80dvh] max-w-md place-items-center px-4 py-10">
         <div className="w-full rounded-2xl border border-border bg-card p-6 text-center shadow-sm sm:p-8">

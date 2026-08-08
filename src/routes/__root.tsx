@@ -24,6 +24,7 @@ import { SITE_URL, SITE_NAME, SITE_DESCRIPTION, GA_MEASUREMENT_ID, absoluteUrl }
 import {
   capturedAuthParams,
   capturedAuthHasSession,
+  isPasswordRecoveryRedirect,
   translateHashAuthError,
 } from "@/lib/auth-redirect";
 import { sendWelcomeEmail } from "@/lib/welcome-email.functions";
@@ -248,12 +249,12 @@ function RootComponent() {
     // null for it. Google OAuth never reaches this branch (it's handled entirely
     // in the popup above), so any non-recovery session landing here is genuinely
     // a signup/invite/email-change confirmation.
-    const type = capturedAuthParams.get("type");
-
     // Password recovery gets its own dedicated flow: /restablecer-password reads this
     // same session itself and asks the student to set a new password before treating
-    // them as "logged in normally". Don't race it by auto-redirecting to /panel here.
-    if (type === "recovery") return;
+    // them as "logged in normally". PKCE only returns `?code=...` (without a `type`),
+    // so the callback pathname is the recovery signal in that flow.
+    const currentPath = typeof window !== "undefined" ? window.location.pathname : "";
+    if (isPasswordRecoveryRedirect(currentPath, capturedAuthParams)) return;
 
     toast.success("¡Correo confirmado! Tu cuenta ya está activa.");
     // The server-side claim on welcome_email_sent_at makes this safe to call
@@ -265,7 +266,6 @@ function RootComponent() {
     // currently on a public/auth landing page. If the session is received while
     // the user is already on a protected destination like /panel, preserve it
     // and let the authenticated route guard decide if /onboarding is needed.
-    const currentPath = typeof window !== "undefined" ? window.location.pathname : "";
     const shouldRedirectToOnboarding =
       currentPath === "/" || currentPath === "/auth" || currentPath === "/restablecer-password";
     if (!shouldRedirectToOnboarding) return;

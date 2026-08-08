@@ -18,8 +18,8 @@ export function BetaBanner() {
   return (
     <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 bg-accent/15 px-4 py-2 text-center text-xs font-medium text-accent-foreground sm:text-sm">
       <span>
-        <strong className="font-semibold">Admi-Tec está en beta</strong>, acceso Premium gratis
-        para todos por tiempo limitado.
+        <strong className="font-semibold">Admi-Tec está en beta</strong>, acceso Premium gratis para
+        todos por tiempo limitado.
       </span>
     </div>
   );

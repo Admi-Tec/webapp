@@ -30,6 +30,14 @@ export const capturedAuthHasSession: boolean = hashHasSignal
     ? !!queryParams?.has("code")
     : false;
 
+// PKCE callbacks only contain `?code=...`; unlike the implicit flow, they do not
+// preserve Supabase's `type=recovery` parameter. The dedicated callback pathname is
+// therefore the reliable recovery signal for PKCE, while `type` keeps implicit-flow
+// links working too.
+export function isPasswordRecoveryRedirect(pathname: string, params = capturedAuthParams): boolean {
+  return pathname === "/restablecer-password" || params?.get("type") === "recovery";
+}
+
 export function translateHashAuthError(params: URLSearchParams): string {
   const code = params.get("error_code") ?? "";
   const error = params.get("error") ?? "";
