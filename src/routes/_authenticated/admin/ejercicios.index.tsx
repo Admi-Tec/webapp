@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,32 +49,64 @@ function AdminExercisesList() {
   const [universityFilter, setUniversityFilter] = useState<string>("all");
   const [yearFilter, setYearFilter] = useState<string>("all");
   const [reshuffling, setReshuffling] = useState(false);
-  // El banco puede tener cientos de ejercicios — no se lanza la búsqueda
+  // El banco puede tener miles de ejercicios — no se lanza la búsqueda
   // automáticamente al entrar a la página; recién se dispara al presionar
   // "Buscar". Cambiar cualquier filtro exige un nuevo click para evitar
   // mostrar resultados de un filtro distinto al ya aplicado.
   const [hasSearched, setHasSearched] = useState(false);
-  const q = useQuery({
-    queryKey: ["admin-exercises"],
-    queryFn: () => fetchList(),
-    enabled: hasSearched,
+  const [appliedFilters, setAppliedFilters] = useState<{
+    search: string;
+    topicId?: string;
+    universityId?: string;
+    year?: number;
+  } | null>(null);
+  const loadMoreRef = useRef<HTMLButtonElement>(null);
+  const q = useInfiniteQuery({
+    queryKey: ["admin-exercises", appliedFilters],
+    queryFn: ({ pageParam }) =>
+      fetchList({
+        data: {
+          ...appliedFilters,
+          page: pageParam,
+          pageSize: 100,
+        },
+      }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, pages) => (lastPage.hasMore ? pages.length : undefined),
+    enabled: hasSearched && appliedFilters !== null,
   });
 
   const allTopics = meta.data?.topics ?? [];
   const allUniversities = meta.data?.universities ?? [];
 
-  const filtered = useMemo(() => {
-    return (q.data ?? []).filter((e) => {
-      if (topicFilter !== "all" && e.topic?.id !== topicFilter) return false;
-      if (universityFilter !== "all" && e.university?.id !== universityFilter) return false;
-      if (yearFilter !== "all" && String(e.exam_year) !== yearFilter) return false;
-      if (filter && !e.statement_md.toLowerCase().includes(filter.toLowerCase())) return false;
-      return true;
+  const exercises = useMemo(() => q.data?.pages.flatMap((page) => page.items) ?? [], [q.data]);
+
+  useEffect(() => {
+    const target = loadMoreRef.current;
+    if (!target || !q.hasNextPage || q.isFetchingNextPage) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) q.fetchNextPage();
+      },
+      { rootMargin: "400px 0px" },
+    );
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [q.hasNextPage, q.isFetchingNextPage, q.fetchNextPage]);
+
+  function runSearch() {
+    setAppliedFilters({
+      search: filter.trim(),
+      topicId: topicFilter === "all" ? undefined : topicFilter,
+      universityId: universityFilter === "all" ? undefined : universityFilter,
+      year: yearFilter === "all" ? undefined : Number(yearFilter),
     });
-  }, [q.data, filter, topicFilter, universityFilter, yearFilter]);
+    setHasSearched(true);
+  }
 
   function resetSearch() {
     setHasSearched(false);
+    setAppliedFilters(null);
   }
 
   async function onDelete(id: string) {
@@ -106,7 +138,7 @@ function AdminExercisesList() {
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground">
           {hasSearched
-            ? `${filtered.length} de ${q.data?.length ?? 0} ejercicios`
+            ? `${exercises.length} ejercicios cargados`
             : "Ajusta los filtros y presiona Buscar"}
         </p>
         <div className="flex flex-wrap gap-2">
@@ -137,7 +169,7 @@ function AdminExercisesList() {
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
-              setHasSearched(true);
+              runSearch();
             }
           }}
           className="max-w-xs"
@@ -199,7 +231,7 @@ function AdminExercisesList() {
             ))}
           </SelectContent>
         </Select>
-        <Button type="button" onClick={() => setHasSearched(true)}>
+        <Button type="button" onClick={runSearch}>
           <Search className="mr-1 h-4 w-4" /> Buscar
         </Button>
       </div>
@@ -223,7 +255,7 @@ function AdminExercisesList() {
                 </TableCell>
               </TableRow>
             )}
-            {hasSearched && q.isLoading && (
+            {hasSearched && q.isPending && (
               <TableRow>
                 <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
                   Cargando…
@@ -232,7 +264,7 @@ function AdminExercisesList() {
             )}
             {hasSearched &&
               !q.isLoading &&
-              filtered.map((ex) => (
+              exercises.map((ex) => (
                 <TableRow key={ex.id}>
                   <TableCell className="max-w-md">
                     <MathText text={ex.statement_md} clampLines={1} className="text-sm" />
@@ -263,18 +295,37 @@ function AdminExercisesList() {
                   </TableCell>
                 </TableRow>
               ))}
-            {hasSearched && !q.isLoading && filtered.length === 0 && (
+            {hasSearched && !q.isPending && exercises.length === 0 && (
               <TableRow>
                 <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
-                  {(q.data?.length ?? 0) === 0
-                    ? "Sin ejercicios todavía."
-                    : "Ningún ejercicio coincide con los filtros."}
+                  {q.isError
+                    ? "No se pudieron cargar los ejercicios. Inténtalo de nuevo."
+                    : "Ningún ejercicio coincide con la búsqueda."}
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
+      {hasSearched && exercises.length > 0 && (q.hasNextPage || q.isFetchingNextPage) && (
+        <div className="flex justify-center py-5">
+          <Button
+            ref={loadMoreRef}
+            type="button"
+            variant="outline"
+            onClick={() => q.fetchNextPage()}
+            disabled={q.isFetchingNextPage}
+            aria-label="Cargar 100 ejercicios más"
+          >
+            {q.isFetchingNextPage ? "Cargando más ejercicios…" : "Cargar 100 más"}
+          </Button>
+        </div>
+      )}
+      {hasSearched && exercises.length > 0 && !q.hasNextPage && (
+        <p className="py-5 text-center text-sm text-muted-foreground" role="status">
+          Has llegado al final de los resultados.
+        </p>
+      )}
     </div>
   );
 }

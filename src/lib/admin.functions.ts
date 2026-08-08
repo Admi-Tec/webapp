@@ -68,19 +68,39 @@ const exerciseUpdateSchema = exerciseBase
     path: ["correct_choice"],
   });
 
+const adminExercisesPageInput = z.object({
+  search: z.string().trim().max(200).default(""),
+  topicId: z.string().uuid().optional(),
+  universityId: z.string().uuid().optional(),
+  year: z.number().int().min(1980).max(2100).optional(),
+  page: z.number().int().min(0).default(0),
+  pageSize: z.number().int().min(1).max(100).default(100),
+});
+
 export const listAdminExercises = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((d) => adminExercisesPageInput.parse(d))
+  .handler(async ({ context, data }) => {
     await assertAdmin(context);
-    const { data, error } = await context.supabase
+    const from = data.page * data.pageSize;
+    const to = from + data.pageSize - 1;
+    let query = context.supabase
       .from("exercises")
       .select(
         "id, statement_md, difficulty, exam_year, created_at, topic:topics(id,name,slug), university:universities(id,short_name), subtopic:subtopics(name)",
       )
       .order("created_at", { ascending: false })
-      .limit(500);
+      .order("id", { ascending: false })
+      .range(from, to);
+    if (data.search) query = query.ilike("statement_md", `%${data.search}%`);
+    if (data.topicId) query = query.eq("topic_id", data.topicId);
+    if (data.universityId) query = query.eq("university_id", data.universityId);
+    if (data.year) query = query.eq("exam_year", data.year);
+
+    const { data: rows, error } = await query;
     if (error) throw new Error(error.message);
-    return data ?? [];
+    const items = rows ?? [];
+    return { items, hasMore: items.length === data.pageSize };
   });
 
 export const getAdminExercise = createServerFn({ method: "GET" })
