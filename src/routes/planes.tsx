@@ -28,11 +28,12 @@ import {
   PREMIUM_FEATURES,
   TRIAL_DAYS,
 } from "@/lib/plan";
-import { CONTACT_EMAIL, pageMeta } from "@/lib/site";
+import { CONTACT_EMAIL, pageMeta, SOCIAL_LINKS } from "@/lib/site";
 import { useInViewOnce } from "@/hooks/use-in-view-once";
 import { useBetaStatus } from "@/hooks/use-beta-status";
 import { useCornerRibbon } from "@/hooks/use-corner-ribbon";
 import { cn } from "@/lib/utils";
+import { WhatsAppIcon } from "@/components/social-icons";
 
 export const Route = createFileRoute("/planes")({
   head: () =>
@@ -71,6 +72,12 @@ function PlanesPage() {
   const quarterlyRibbon = useCornerRibbon<HTMLDivElement>(0.25);
 
   const canTrial = signedIn === true && !isPremium && !trialUsed;
+
+  const whatsappHref = subscribeBilling
+    ? `${SOCIAL_LINKS.whatsapp}${SOCIAL_LINKS.whatsapp.includes("?") ? "&" : "?"}text=${encodeURIComponent(
+        `Hola, quiero suscribirme a Admi-Tec Premium ${PLAN_PRICES[subscribeBilling].label} por S/ ${PLAN_PRICES[subscribeBilling].amount} ${PLAN_PRICES[subscribeBilling].per}.`,
+      )}`
+    : SOCIAL_LINKS.whatsapp;
 
   // Identical state machine for both premium columns (Mensual/Trimestral) —
   // the free trial itself is plan-agnostic, so only which billing gets
@@ -521,7 +528,7 @@ function PlanesPage() {
             <DialogDescription className="text-center">
               Estamos habilitando los pagos en línea para el plan{" "}
               {subscribeBilling && PLAN_PRICES[subscribeBilling].label.toLowerCase()}. Mientras
-              tanto, escríbenos y te activamos Premium de forma manual — responde una persona real,
+              tanto, escríbenos y te activamos Premium de forma manual, responde una persona real,
               rápido.
             </DialogDescription>
           </DialogHeader>
@@ -534,6 +541,16 @@ function PlanesPage() {
               )}`}
             >
               <Mail className="mr-2 h-4 w-4" /> Escribir a {CONTACT_EMAIL}
+            </a>
+          </Button>
+          <Button
+            asChild
+            size="lg"
+            variant="outline"
+            className="press border-[#25D366] text-[#128C4A] hover:bg-[#25D366]/10 hover:text-[#128C4A]"
+          >
+            <a href={whatsappHref} target="_blank" rel="noopener noreferrer">
+              <WhatsAppIcon className="mr-2 h-5 w-5" /> Escribir por WhatsApp
             </a>
           </Button>
           {subscribeBilling && (
