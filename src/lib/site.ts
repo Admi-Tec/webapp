@@ -20,7 +20,7 @@ export const SOCIAL_LINKS = {
   instagram: import.meta.env.VITE_INSTAGRAM_URL || "https://instagram.com/admi.tec",
   tiktok: import.meta.env.VITE_TIKTOK_URL || "https://tiktok.com/@admitec.pe",
   // Número en formato internacional sin "+" (51 = Perú) para el enlace wa.me.
-  whatsapp: import.meta.env.VITE_WHATSAPP_URL || "https://wa.me/51999999999",
+  whatsapp: import.meta.env.VITE_WHATSAPP_URL || "https://wa.me/51973228846",
 } as const;
 export const SITE_DESCRIPTION =
   "Exámenes oficiales, simulacros ilimitados de todos tus cursos y ranking anónimo para tu admisión a la UNI, San Marcos, PUCP, UNALM y más.";
