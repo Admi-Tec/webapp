@@ -16,7 +16,7 @@ export const getFullProfile = createServerFn({ method: "GET" })
       supabase
         .from("profiles")
         .select(
-          "id, full_name, avatar_url, target_university, pseudonym, career, leaderboard_opt_in, weekly_goal_questions, weekly_goal_exams, onboarding_completed, prep_time, prep_method, weekly_study_hours, initial_weak_topic_ids",
+          "id, full_name, avatar_url, target_university, pseudonym, pseudonym_change_required, career, leaderboard_opt_in, weekly_goal_questions, weekly_goal_exams, onboarding_completed, prep_time, prep_method, weekly_study_hours, initial_weak_topic_ids",
         )
         .eq("id", userId)
         .maybeSingle(),
@@ -139,6 +139,7 @@ export const updateFullProfile = createServerFn({ method: "POST" })
       id: string;
       full_name?: string;
       pseudonym?: string | null;
+      pseudonym_change_required?: boolean;
       career?: string | null;
       leaderboard_opt_in?: boolean;
       weekly_goal_questions?: number;
@@ -151,7 +152,10 @@ export const updateFullProfile = createServerFn({ method: "POST" })
       onboarding_completed_at?: string;
     } = { id: userId };
     if (data.fullName !== undefined) patch.full_name = data.fullName;
-    if (data.pseudonym !== undefined) patch.pseudonym = data.pseudonym;
+    if (data.pseudonym !== undefined) {
+      patch.pseudonym = data.pseudonym;
+      if (data.pseudonym) patch.pseudonym_change_required = false;
+    }
     if (data.career !== undefined) patch.career = data.career;
     if (data.leaderboardOptIn !== undefined) patch.leaderboard_opt_in = data.leaderboardOptIn;
     if (data.weeklyGoalQuestions !== undefined)

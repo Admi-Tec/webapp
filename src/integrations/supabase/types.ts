@@ -8,6 +8,33 @@ export type Database = {
   };
   public: {
     Tables: {
+      admin_student_audit_log: {
+        Row: {
+          action: string;
+          admin_user_id: string;
+          created_at: string;
+          details: Json;
+          id: string;
+          student_user_id: string;
+        };
+        Insert: {
+          action: string;
+          admin_user_id: string;
+          created_at?: string;
+          details?: Json;
+          id?: string;
+          student_user_id: string;
+        };
+        Update: {
+          action?: string;
+          admin_user_id?: string;
+          created_at?: string;
+          details?: Json;
+          id?: string;
+          student_user_id?: string;
+        };
+        Relationships: [];
+      };
       app_config: {
         Row: {
           beta_ends_at: string | null;
@@ -654,9 +681,13 @@ export type Database = {
           onboarding_completed: boolean;
           onboarding_completed_at: string | null;
           plan_type: string;
+          premium_ends_at: string | null;
+          premium_source: string | null;
           prep_method: string | null;
           prep_time: string | null;
           pseudonym: string | null;
+          pseudonym_change_required: boolean;
+          suspended_at: string | null;
           target_university: string | null;
           trial_ends_at: string | null;
           trial_used: boolean;
@@ -676,9 +707,13 @@ export type Database = {
           onboarding_completed?: boolean;
           onboarding_completed_at?: string | null;
           plan_type?: string;
+          premium_ends_at?: string | null;
+          premium_source?: string | null;
           prep_method?: string | null;
           prep_time?: string | null;
           pseudonym?: string | null;
+          pseudonym_change_required?: boolean;
+          suspended_at?: string | null;
           target_university?: string | null;
           trial_ends_at?: string | null;
           trial_used?: boolean;
@@ -698,9 +733,13 @@ export type Database = {
           onboarding_completed?: boolean;
           onboarding_completed_at?: string | null;
           plan_type?: string;
+          premium_ends_at?: string | null;
+          premium_source?: string | null;
           prep_method?: string | null;
           prep_time?: string | null;
           pseudonym?: string | null;
+          pseudonym_change_required?: boolean;
+          suspended_at?: string | null;
           target_university?: string | null;
           trial_ends_at?: string | null;
           trial_used?: boolean;

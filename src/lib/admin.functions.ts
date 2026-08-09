@@ -1445,3 +1445,307 @@ export const getTopicQuestionCounts = createServerFn({ method: "POST" })
     }
     return out;
   });
+
+// ── Gestión de estudiantes ────────────────────────────────────────────────
+
+const studentListSchema = z.object({
+  search: z.string().trim().max(200).default(""),
+  universityId: z.string().uuid().optional(),
+  plan: z.enum(["all", "free", "premium", "trial"]).default("all"),
+  page: z.number().int().min(0).default(0),
+  pageSize: z.number().int().min(1).max(100).default(25),
+});
+
+async function listAllAuthUsers() {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const users = [];
+  for (let page = 1; page <= 20; page += 1) {
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 1000 });
+    if (error) throw new Error(error.message);
+    users.push(...data.users);
+    if (data.users.length < 1000) break;
+  }
+  return { supabaseAdmin, users };
+}
+
+export const listAdminStudents = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => studentListSchema.parse(d))
+  .handler(async ({ context, data }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin, users } = await listAllAuthUsers();
+    const [{ data: profiles, error: profileError }, { data: links, error: linksError }] =
+      await Promise.all([
+        supabaseAdmin.from("profiles").select("*"),
+        supabaseAdmin
+          .from("student_universities")
+          .select("user_id, university_id, exam_date, university:universities(id,short_name,name)"),
+      ]);
+    if (profileError) throw new Error(profileError.message);
+    if (linksError) throw new Error(linksError.message);
+
+    const userIds = (profiles ?? []).map((p) => p.id);
+    const activityByUser = new Map<string, string>();
+    if (userIds.length) {
+      const [{ data: attempts }, { data: sessions }] = await Promise.all([
+        supabaseAdmin.from("attempts").select("user_id,created_at").in("user_id", userIds),
+        supabaseAdmin.from("exam_sessions").select("user_id,started_at").in("user_id", userIds),
+      ]);
+      for (const row of [
+        ...(attempts ?? []),
+        ...(sessions ?? []).map((s) => ({ user_id: s.user_id, created_at: s.started_at })),
+      ]) {
+        const previous = activityByUser.get(row.user_id);
+        if (!previous || row.created_at > previous) activityByUser.set(row.user_id, row.created_at);
+      }
+    }
+
+    const authById = new Map(users.map((u) => [u.id, u]));
+    const linksByUser = new Map<string, typeof links>();
+    for (const link of links ?? []) {
+      const current = linksByUser.get(link.user_id) ?? [];
+      current.push(link);
+      linksByUser.set(link.user_id, current);
+    }
+    const term = data.search.toLocaleLowerCase("es");
+    const rows = (profiles ?? [])
+      .map((profile) => {
+        const auth = authById.get(profile.id);
+        const lastActivity = activityByUser.get(profile.id) ?? auth?.last_sign_in_at ?? null;
+        return {
+          id: profile.id,
+          fullName: profile.full_name,
+          email: auth?.email ?? "",
+          pseudonym: profile.pseudonym,
+          createdAt: auth?.created_at ?? profile.created_at,
+          planType: profile.plan_type,
+          premiumSource: profile.premium_source,
+          premiumEndsAt: profile.premium_ends_at ?? profile.trial_ends_at,
+          suspendedAt: profile.suspended_at,
+          lastActivity,
+          universities: linksByUser.get(profile.id) ?? [],
+        };
+      })
+      .filter((row) => {
+        if (term && !row.email.toLocaleLowerCase("es").includes(term)) return false;
+        if (
+          data.universityId &&
+          !row.universities.some((u) => u.university_id === data.universityId)
+        )
+          return false;
+        if (data.plan === "free" && row.planType !== "free") return false;
+        if (
+          data.plan === "premium" &&
+          !(row.planType === "premium" && row.premiumSource !== "trial")
+        )
+          return false;
+        if (data.plan === "trial" && !(row.planType === "premium" && row.premiumSource === "trial"))
+          return false;
+        return true;
+      })
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    const from = data.page * data.pageSize;
+    return { items: rows.slice(from, from + data.pageSize), total: rows.length };
+  });
+
+export const getAdminStudent = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ context, data }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: authResult, error: authError } = await supabaseAdmin.auth.admin.getUserById(
+      data.id,
+    );
+    if (authError) throw new Error(authError.message);
+    const [profile, universities, sessions, favorites, ratings, reports, attempts, audit] =
+      await Promise.all([
+        supabaseAdmin.from("profiles").select("*").eq("id", data.id).single(),
+        supabaseAdmin
+          .from("student_universities")
+          .select(
+            "id,exam_date,university:universities(id,name,short_name),career:careers(id,name)",
+          )
+          .eq("user_id", data.id),
+        supabaseAdmin
+          .from("exam_sessions")
+          .select(
+            "id,started_at,finished_at,status,score,max_score,total,exam:exams(title,exam_type)",
+          )
+          .eq("user_id", data.id)
+          .order("started_at", { ascending: false })
+          .limit(100),
+        supabaseAdmin
+          .from("favorite_exercises")
+          .select("id,created_at,exercise:exercises(id,statement_md)")
+          .eq("user_id", data.id)
+          .order("created_at", { ascending: false })
+          .limit(100),
+        supabaseAdmin
+          .from("exercise_ratings")
+          .select("id,stars,created_at,exercise:exercises(id,statement_md)")
+          .eq("user_id", data.id)
+          .order("created_at", { ascending: false })
+          .limit(100),
+        supabaseAdmin
+          .from("exercise_reports")
+          .select(
+            "id,reason,note,status,created_at,resolved_at,exercise:exercises(id,statement_md)",
+          )
+          .eq("user_id", data.id)
+          .order("created_at", { ascending: false })
+          .limit(100),
+        supabaseAdmin
+          .from("attempts")
+          .select("created_at,is_correct")
+          .eq("user_id", data.id)
+          .gte("created_at", new Date(Date.now() - 7 * 86400000).toISOString()),
+        supabaseAdmin
+          .from("admin_student_audit_log")
+          .select("id,action,details,created_at,admin_user_id")
+          .eq("student_user_id", data.id)
+          .order("created_at", { ascending: false })
+          .limit(50),
+      ]);
+    for (const result of [
+      profile,
+      universities,
+      sessions,
+      favorites,
+      ratings,
+      reports,
+      attempts,
+      audit,
+    ]) {
+      if (result.error) throw new Error(result.error.message);
+    }
+    const identities = authResult.user.identities ?? [];
+    return {
+      profile: profile.data,
+      auth: {
+        email: authResult.user.email ?? "",
+        createdAt: authResult.user.created_at,
+        lastSignInAt: authResult.user.last_sign_in_at ?? null,
+        providers: Array.from(new Set(identities.map((i) => i.provider))),
+      },
+      universities: universities.data ?? [],
+      sessions: sessions.data ?? [],
+      favorites: favorites.data ?? [],
+      ratings: ratings.data ?? [],
+      reports: reports.data ?? [],
+      weekly: {
+        questionsDone: attempts.data?.length ?? 0,
+        correct: attempts.data?.filter((a) => a.is_correct).length ?? 0,
+        questionsGoal: profile.data.weekly_goal_questions,
+        examsGoal: profile.data.weekly_goal_exams,
+        examsDone:
+          sessions.data?.filter(
+            (s) => s.finished_at && new Date(s.finished_at).getTime() >= Date.now() - 7 * 86400000,
+          ).length ?? 0,
+      },
+      audit: audit.data ?? [],
+    };
+  });
+
+const planChangeSchema = z.object({
+  id: z.string().uuid(),
+  planType: z.enum(["free", "premium"]),
+  expiresAt: z.string().datetime().nullable().default(null),
+});
+
+export const updateAdminStudentPlan = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => planChangeSchema.parse(d))
+  .handler(async ({ context, data }) => {
+    await assertAdmin(context);
+    if (data.expiresAt && new Date(data.expiresAt) <= new Date())
+      throw new Error("La fecha de vencimiento debe ser futura.");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const payload =
+      data.planType === "free"
+        ? { plan_type: "free", premium_source: null, premium_ends_at: null, trial_ends_at: null }
+        : {
+            plan_type: "premium",
+            premium_source: "admin",
+            premium_ends_at: data.expiresAt,
+            trial_ends_at: null,
+          };
+    const { data: rows, error } = await supabaseAdmin
+      .from("profiles")
+      .update(payload)
+      .eq("id", data.id)
+      .select("id");
+    if (error) throw new Error(error.message);
+    assertRowsAffected(rows, "el plan del estudiante");
+    await supabaseAdmin.from("admin_student_audit_log").insert({
+      admin_user_id: context.userId,
+      student_user_id: data.id,
+      action: "plan_changed",
+      details: { plan_type: data.planType, expires_at: data.expiresAt },
+    });
+    return { ok: true };
+  });
+
+export const setAdminStudentSuspended = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid(), suspended: z.boolean() }).parse(d))
+  .handler(async ({ context, data }) => {
+    await assertAdmin(context);
+    if (data.id === context.userId)
+      throw new Error("No puedes suspender tu propia cuenta de administrador.");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(data.id, {
+      ban_duration: data.suspended ? "876000h" : "none",
+    });
+    if (authError) throw new Error(authError.message);
+    const suspendedAt = data.suspended ? new Date().toISOString() : null;
+    const { error } = await supabaseAdmin
+      .from("profiles")
+      .update({ suspended_at: suspendedAt })
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    await supabaseAdmin.from("admin_student_audit_log").insert({
+      admin_user_id: context.userId,
+      student_user_id: data.id,
+      action: data.suspended ? "account_suspended" : "account_reactivated",
+      details: {},
+    });
+    return { ok: true };
+  });
+
+export const updateAdminStudentPseudonym = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        mode: z.enum(["require", "reset"]),
+        pseudonym: z.string().trim().min(3).max(24).optional(),
+      })
+      .refine((v) => v.mode !== "reset" || !!v.pseudonym, {
+        message: "Escribe un pseudónimo temporal",
+      })
+      .parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const changes =
+      data.mode === "require"
+        ? { pseudonym_change_required: true }
+        : { pseudonym: data.pseudonym!, pseudonym_change_required: true };
+    const { data: rows, error } = await supabaseAdmin
+      .from("profiles")
+      .update(changes)
+      .eq("id", data.id)
+      .select("id");
+    if (error) throw new Error(error.message);
+    assertRowsAffected(rows, "el pseudónimo");
+    await supabaseAdmin.from("admin_student_audit_log").insert({
+      admin_user_id: context.userId,
+      student_user_id: data.id,
+      action: data.mode === "reset" ? "pseudonym_reset" : "pseudonym_change_required",
+      details: data.pseudonym ? { temporary_pseudonym: data.pseudonym } : {},
+    });
+    return { ok: true };
+  });

@@ -137,9 +137,7 @@ function AdminExercisesList() {
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground">
-          {hasSearched
-            ? `${exercises.length} ejercicios cargados`
-            : "Ajusta los filtros y presiona Buscar"}
+          {hasSearched ? `${exercises.length} ejercicios cargados` : "Sin búsqueda"}
         </p>
         <div className="flex flex-wrap gap-2">
           <Button
@@ -235,78 +233,84 @@ function AdminExercisesList() {
           <Search className="mr-1 h-4 w-4" /> Buscar
         </Button>
       </div>
-      <div className="rounded-lg border border-border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Enunciado</TableHead>
-              <TableHead>Curso</TableHead>
-              <TableHead>Universidad</TableHead>
-              <TableHead>Dificultad</TableHead>
-              <TableHead>Año</TableHead>
-              <TableHead className="text-right">Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {!hasSearched && (
+      {!hasSearched ? (
+        <div className="rounded-lg border border-dashed bg-card px-6 py-16 text-center">
+          <Search className="mx-auto h-6 w-6 text-muted-foreground" />
+          <p className="mt-3 font-medium">Busca los ejercicios que necesitas consultar</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Ajusta los filtros y presiona &quot;Buscar&quot; para ver los ejercicios.
+          </p>
+        </div>
+      ) : (
+        <div className="rounded-lg border border-border bg-card">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
-                  Ajusta los filtros y presiona "Buscar" para ver ejercicios.
-                </TableCell>
+                <TableHead>Enunciado</TableHead>
+                <TableHead>Curso</TableHead>
+                <TableHead>Universidad</TableHead>
+                <TableHead>Dificultad</TableHead>
+                <TableHead>Año</TableHead>
+                <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
-            )}
-            {hasSearched && q.isPending && (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
-                  Cargando…
-                </TableCell>
-              </TableRow>
-            )}
-            {hasSearched &&
-              !q.isLoading &&
-              exercises.map((ex) => (
-                <TableRow key={ex.id}>
-                  <TableCell className="max-w-md">
-                    <MathText text={ex.statement_md} clampLines={1} className="text-sm" />
-                  </TableCell>
-                  <TableCell>
-                    {ex.topic?.name}
-                    {ex.subtopic ? ` · ${ex.subtopic.name}` : ""}
-                  </TableCell>
-                  <TableCell>{ex.university?.short_name ?? "—"}</TableCell>
-                  <TableCell className="capitalize">{ex.difficulty}</TableCell>
-                  <TableCell>{ex.exam_year ?? "—"}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button asChild size="icon" variant="ghost">
-                        <Link to="/admin/ejercicios/$id" params={{ id: ex.id }} aria-label="Editar">
-                          <Pencil className="h-4 w-4" />
-                        </Link>
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => onDelete(ex.id)}
-                        aria-label="Eliminar"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+            </TableHeader>
+            <TableBody>
+              {q.isPending && (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
+                    Cargando…
                   </TableCell>
                 </TableRow>
-              ))}
-            {hasSearched && !q.isPending && exercises.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
-                  {q.isError
-                    ? "No se pudieron cargar los ejercicios. Inténtalo de nuevo."
-                    : "Ningún ejercicio coincide con la búsqueda."}
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              )}
+              {!q.isLoading &&
+                exercises.map((ex) => (
+                  <TableRow key={ex.id}>
+                    <TableCell className="max-w-md">
+                      <MathText text={ex.statement_md} clampLines={1} className="text-sm" />
+                    </TableCell>
+                    <TableCell>
+                      {ex.topic?.name}
+                      {ex.subtopic ? ` · ${ex.subtopic.name}` : ""}
+                    </TableCell>
+                    <TableCell>{ex.university?.short_name ?? "—"}</TableCell>
+                    <TableCell className="capitalize">{ex.difficulty}</TableCell>
+                    <TableCell>{ex.exam_year ?? "—"}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button asChild size="icon" variant="ghost">
+                          <Link
+                            to="/admin/ejercicios/$id"
+                            params={{ id: ex.id }}
+                            aria-label="Editar"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => onDelete(ex.id)}
+                          aria-label="Eliminar"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              {!q.isPending && exercises.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
+                    {q.isError
+                      ? "No se pudieron cargar los ejercicios. Inténtalo de nuevo."
+                      : "Ningún ejercicio coincide con la búsqueda."}
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
       {hasSearched && exercises.length > 0 && (q.hasNextPage || q.isFetchingNextPage) && (
         <div className="flex justify-center py-5">
           <Button

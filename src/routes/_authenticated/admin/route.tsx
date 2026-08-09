@@ -19,6 +19,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
 });
 
 const NAV_ITEMS = [
+  { to: "/admin/alumnos", label: "Alumnos" },
   { to: "/admin/ejercicios", label: "Ejercicios" },
   { to: "/admin/importar", label: "Importar" },
   { to: "/admin/examenes", label: "Exámenes" },

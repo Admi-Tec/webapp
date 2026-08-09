@@ -287,6 +287,14 @@ function PerfilPage() {
         onSubmit={onSubmit}
         className="mt-6 space-y-6 rounded-xl border border-border bg-card p-6"
       >
+        {p0?.pseudonym_change_required && (
+          <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+            <p className="font-medium">Necesitas elegir un pseudónimo nuevo</p>
+            <p className="mt-1">
+              Actualízalo y guarda tu perfil para continuar usando la plataforma.
+            </p>
+          </div>
+        )}
         <div>
           <Label htmlFor="name">Nombre completo</Label>
           <Input id="name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
