@@ -37,8 +37,20 @@ export function FeatureCarousel({
   onActiveChange: (index: number) => void;
 }) {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: "center" });
+  const [desktopCarousel, setDesktopCarousel] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const tweenFactorRef = useRef(0);
+
+  // Below lg the three features are more useful as a stable reading list.
+  // Keep the media query live so rotating/resizing the device switches modes
+  // without reloading, and so Embla's timers never run while mobile is shown.
+  useEffect(() => {
+    const media = window.matchMedia("(min-width: 1024px)");
+    const syncMode = () => setDesktopCarousel(media.matches);
+    syncMode();
+    media.addEventListener("change", syncMode);
+    return () => media.removeEventListener("change", syncMode);
+  }, []);
 
   const setTweenFactor = useCallback((api: EmblaApi) => {
     tweenFactorRef.current = TWEEN_FACTOR * api.scrollSnapList().length;
@@ -80,7 +92,7 @@ export function FeatureCarousel({
   }, []);
 
   useEffect(() => {
-    if (!emblaApi) return;
+    if (!emblaApi || !desktopCarousel) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     setTweenFactor(emblaApi);
@@ -91,10 +103,10 @@ export function FeatureCarousel({
       .on("reInit", tweenScale)
       .on("scroll", tweenScale)
       .on("slideFocus", tweenScale);
-  }, [emblaApi, setTweenFactor, tweenScale]);
+  }, [desktopCarousel, emblaApi, setTweenFactor, tweenScale]);
 
   useEffect(() => {
-    if (!emblaApi) return;
+    if (!emblaApi || !desktopCarousel) return;
     const onSelect = () => {
       const i = emblaApi.selectedScrollSnap();
       setSelectedIndex(i);
@@ -105,25 +117,25 @@ export function FeatureCarousel({
     return () => {
       emblaApi.off("select", onSelect);
     };
-  }, [emblaApi, onActiveChange]);
+  }, [desktopCarousel, emblaApi, onActiveChange]);
 
   // Sincroniza en el otro sentido: si el estudiante hace clic en un bloque de
   // SimulacroShowcase, el carrusel se desplaza hasta esa tarjeta — el mismo
   // "select" de arriba dispara onActiveChange con el mismo valor al llegar,
   // así que no hay ida y vuelta infinita entre los dos estados.
   useEffect(() => {
-    if (!emblaApi) return;
+    if (!emblaApi || !desktopCarousel) return;
     const target = activeIndex - 1;
     if (emblaApi.selectedScrollSnap() === target) return;
     emblaApi.scrollTo(target);
-  }, [emblaApi, activeIndex]);
+  }, [desktopCarousel, emblaApi, activeIndex]);
 
-  // Auto-avance cada 5s, en desktop y celular por igual (loop:true ya hace
-  // que scrollNext() vuelva a la primera tarjeta al llegar al final). Se
+  // Auto-avance cada 5s, solo en desktop (loop:true hace que scrollNext()
+  // vuelva a la primera tarjeta al llegar al final). Se
   // pausa mientras el estudiante arrastra (pointerDown→pointerUp) para no
   // pelear con un drag en curso, y retoma el conteo desde cero al soltar.
   useEffect(() => {
-    if (!emblaApi) return;
+    if (!emblaApi || !desktopCarousel) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     let timer: ReturnType<typeof setInterval> | null = null;
@@ -145,7 +157,17 @@ export function FeatureCarousel({
       emblaApi.off("pointerDown", stop);
       emblaApi.off("pointerUp", start);
     };
-  }, [emblaApi]);
+  }, [desktopCarousel, emblaApi]);
+
+  if (!desktopCarousel) {
+    return (
+      <div className="flex flex-col gap-4" aria-label="Funciones de Admi-Tec">
+        {items.map((item) => (
+          <FeatureSlide key={item.title} item={item} active={false} staticCard />
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col">
@@ -189,13 +211,25 @@ export function FeatureCarousel({
   );
 }
 
-function FeatureSlide({ item, active }: { item: PillarItem; active: boolean }) {
+function FeatureSlide({
+  item,
+  active,
+  staticCard = false,
+}: {
+  item: PillarItem;
+  active: boolean;
+  staticCard?: boolean;
+}) {
   const { Icon } = item;
   return (
     <article
       className={cn(
-        "feature-slide flex flex-col rounded-lg border bg-card p-5 transition-[border-color,box-shadow] duration-300 ease-out motion-reduce:transition-none sm:p-6",
-        active ? "border-primary/60 shadow-[0_8px_8px_-4px_rgba(15,23,42,0.4)]" : "border-border",
+        "flex flex-col rounded-lg border bg-card p-5 sm:p-6",
+        !staticCard &&
+          "feature-slide transition-[border-color,box-shadow] duration-300 ease-out motion-reduce:transition-none",
+        active && !staticCard
+          ? "border-primary/60 shadow-[0_8px_8px_-4px_rgba(15,23,42,0.4)]"
+          : "border-border",
       )}
     >
       <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">

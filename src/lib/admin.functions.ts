@@ -360,24 +360,24 @@ export const listAdminTopics = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context);
-    const [{ data, error }, subtopicsRes, countsRes] = await Promise.all([
+    const [{ data, error }, subtopicsRes, topicCountsRes, subtopicCountsRes] = await Promise.all([
       context.supabase
         .from("topics")
         .select("id, name, slug, description, color, active, order")
         .order("order"),
       context.supabase.from("subtopics").select("id, name, topic_id").order("order"),
-      context.supabase.from("exercises").select("topic_id, subtopic_id"),
+      context.supabase.rpc("get_exercise_counts_by_topic"),
+      context.supabase.rpc("get_exercise_counts_by_subtopic"),
     ]);
     if (error) throw new Error(error.message);
     if (subtopicsRes.error) throw new Error(subtopicsRes.error.message);
-    const topicCounts = new Map<string, number>();
-    const subtopicCounts = new Map<string, number>();
-    ((countsRes.data ?? []) as Pick<Tables<"exercises">, "topic_id" | "subtopic_id">[]).forEach(
-      (r) => {
-        topicCounts.set(r.topic_id, (topicCounts.get(r.topic_id) ?? 0) + 1);
-        if (r.subtopic_id)
-          subtopicCounts.set(r.subtopic_id, (subtopicCounts.get(r.subtopic_id) ?? 0) + 1);
-      },
+    if (topicCountsRes.error) throw new Error(topicCountsRes.error.message);
+    if (subtopicCountsRes.error) throw new Error(subtopicCountsRes.error.message);
+    const topicCounts = new Map(
+      (topicCountsRes.data ?? []).map((row) => [row.topic_id, row.exercise_count]),
+    );
+    const subtopicCounts = new Map(
+      (subtopicCountsRes.data ?? []).map((row) => [row.subtopic_id, row.exercise_count]),
     );
     const subtopicRows = (subtopicsRes.data ?? []) as Pick<
       Tables<"subtopics">,

@@ -973,6 +973,13 @@ export type Database = {
           topic_id: string;
         }[];
       };
+      get_exercise_counts_by_subtopic: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          exercise_count: number;
+          subtopic_id: string;
+        }[];
+      };
       get_exercise_counts_by_university: {
         Args: Record<PropertyKey, never>;
         Returns: {

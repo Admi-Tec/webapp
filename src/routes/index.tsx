@@ -331,7 +331,10 @@ function Index() {
         id="hero"
         className={cn(
           "relative overflow-hidden border-b border-border",
-          "snap-section flex flex-col justify-center",
+          // On narrow screens the copy and portrait stack, so forcing a full
+          // viewport leaves a conspicuous empty band. The viewport-height
+          // treatment only belongs to the side-by-side desktop composition.
+          "flex min-h-0 flex-col justify-center lg:min-h-[calc(100dvh-var(--site-header-h))]",
         )}
       >
         {/* Ambient depth: two large soft glows (amber = pencil light, teal =
@@ -365,7 +368,7 @@ function Index() {
         >
           <div className="h-[26rem] w-[26rem] rounded-full bg-success/[0.12] blur-[110px]" />
         </div>
-        <div className="relative mx-auto grid w-full max-w-6xl flex-1 gap-8 px-4 pb-8 pt-12 sm:pb-10 sm:pt-16 lg:grid-cols-[1.2fr_1fr] lg:items-stretch lg:gap-12 lg:pb-0 lg:pt-0">
+        <div className="relative mx-auto grid w-full max-w-6xl flex-1 gap-7 px-4 py-9 sm:gap-8 sm:py-12 lg:grid-cols-[1.2fr_1fr] lg:items-stretch lg:gap-12 lg:py-0">
           <div className="lg:self-center lg:py-10">
             <h1 className="text-balance text-[clamp(2.5rem,1.9rem+3.2vw,4.5rem)] font-bold leading-[1.02] tracking-[-0.03em]">
               <StaggeredWords text="Cuando llegues a tu examen," startIndex={0} />{" "}
@@ -413,10 +416,9 @@ function Index() {
             </div>
           </div>
 
-          {/* Postulante real de cuerpo presente: solo aparece cuando la
-              grilla tiene espacio para ponerlo junto al texto (lg+). Debajo
-              de eso el texto manda solo — nunca se apila la foto bajo la
-              copy en celulares/tablets. */}
+          {/* The portrait only earns its space when it can sit beside the
+              message. On phones and narrow tablets the copy remains the
+              complete hero, with no decorative image stacked underneath. */}
           <div className="relative mx-auto hidden w-full max-w-[24rem] items-end justify-center lg:flex lg:self-end">
             {/* Único destello ámbar detrás del postulante: respira lento
                 (mismo animate-glow que el widget del reto del día) para
@@ -600,8 +602,8 @@ function Index() {
           aria-hidden
           className="pointer-events-none absolute -left-24 top-0 h-72 w-72 rounded-full bg-primary/10 blur-[100px]"
         />
-        <div className="landing-section-content mx-auto grid w-full max-w-6xl gap-8 px-4 sm:gap-10 lg:grid-cols-[1fr_1.1fr] lg:items-center">
-          <div>
+        <div className="landing-section-content mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 sm:gap-10">
+          <div className="max-w-2xl">
             <span className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
               <span className="inline-flex h-2 w-2 rounded-full bg-foreground/70" aria-hidden />{" "}
               Reto del día
@@ -609,7 +611,7 @@ function Index() {
             <h2 className="mt-3 text-balance text-[clamp(1.75rem,1.5rem+1.2vw,2.5rem)] font-bold tracking-[-0.03em]">
               Ponte a prueba ahora mismo.
             </h2>
-            <p className="mt-3 max-w-md text-pretty text-muted-foreground">
+            <p className="mt-3 max-w-xl text-pretty text-muted-foreground">
               Cada día publicamos{" "}
               <strong className="font-semibold text-foreground">
                 un ejercicio real de nuestra base
@@ -631,7 +633,7 @@ function Index() {
               // widget: mismo tamaño exacto (sin padding entre ambos), así
               // que el widget lo tapa por completo y no asoma navy cuadrado
               // detrás de sus esquinas redondeadas.
-              "at mx-auto w-full max-w-sm rounded-lg lg:max-w-none",
+              "at w-full rounded-lg",
             )}
           >
             <Suspense fallback={<AnswerSheetSkeleton />}>
