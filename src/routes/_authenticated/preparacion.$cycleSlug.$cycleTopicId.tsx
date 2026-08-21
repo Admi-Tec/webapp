@@ -101,6 +101,9 @@ function PreparationUnitPage() {
                   to="/practica/$topicSlug"
                   params={{ topicSlug: unit.course.topic?.slug ?? "" }}
                   search={{ subtopic: unit.subtopic?.slug, cycleTopic: unit.id, cycleSlug }}
+                  onClick={() => {
+                    queryClient.removeQueries({ queryKey: ["practice-exercises"] });
+                  }}
                 >
                   {progress?.practice_completed_at ? "Practicar nuevamente" : "Practicar este tema"}{" "}
                   <ArrowRight className="ml-2 h-4 w-4" />

@@ -74,6 +74,13 @@ export const listPreparationCyclesAdmin = createServerFn({ method: "GET" })
 const cycleInput = z.object({
   id: z.string().uuid().optional(),
   name: z.string().trim().min(2).max(120),
+  slug: z
+    .string()
+    .trim()
+    .min(2)
+    .max(70)
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "El slug solo puede usar minúsculas, números y guiones.")
+    .optional(),
   universityId: z.string().uuid(),
   description: z.string().trim().max(1000).nullable().optional(),
   status: statusSchema.default("draft"),
@@ -89,6 +96,7 @@ export const savePreparationCycle = createServerFn({ method: "POST" })
         .from("preparation_cycles")
         .update({
           name: data.name,
+          ...(data.slug ? { slug: data.slug } : {}),
           university_id: data.universityId,
           description: data.description ?? null,
           status: data.status,
@@ -96,7 +104,12 @@ export const savePreparationCycle = createServerFn({ method: "POST" })
         .eq("id", data.id)
         .select("id")
         .single();
-      if (error) throw new Error(error.message);
+      if (error)
+        throw new Error(
+          error.code === "23505"
+            ? "Ya existe un ciclo con ese slug para la universidad."
+            : error.message,
+        );
       return row;
     }
     const base = slugify(data.name) || "ciclo";
@@ -491,6 +504,39 @@ export const startPreparationPractice = createServerFn({ method: "POST" })
       .eq("course.cycle.status", "published")
       .single();
     if (error || !unit) throw new Error("Unidad no disponible.");
+
+    // Mobile browsers may discard the page while the student switches apps.
+    // Resume only the latest session when it is still active; older unfinished
+    // sessions are intentionally ignored.
+    const { data: latestSession, error: latestSessionError } = await context.supabase
+      .from("preparation_practice_sessions")
+      .select("id,question_ids,answered_ids,correct_count,status")
+      .eq("user_id", context.userId)
+      .eq("cycle_topic_id", data.cycleTopicId)
+      .order("started_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (latestSessionError) throw new Error(latestSessionError.message);
+    if (latestSession?.status === "in_progress") {
+      const { data: sessionQuestions, error: sessionQuestionsError } = await context.supabase
+        .from("exercises")
+        .select("id,statement_md,statement_image_path,difficulty,choices")
+        .in("id", latestSession.question_ids);
+      if (sessionQuestionsError) throw new Error(sessionQuestionsError.message);
+      const questionsById = new Map(
+        (sessionQuestions ?? []).map((question) => [question.id, question]),
+      );
+      const questions = latestSession.question_ids
+        .map((id) => questionsById.get(id))
+        .filter((question): question is SafeExercise => !!question);
+      return {
+        sessionId: latestSession.id,
+        questions,
+        answeredIds: latestSession.answered_ids,
+        correctCount: latestSession.correct_count,
+      };
+    }
+
     const wanted = unit.practice_question_count;
     const topicId = unit.course.topic_id;
     const universityId = unit.course.cycle.university_id;
@@ -516,7 +562,13 @@ export const startPreparationPractice = createServerFn({ method: "POST" })
       return score(a) - score(b);
     });
     const questions = ranked.slice(0, wanted).map(({ university_id: _, ...row }) => row);
-    if (questions.length === 0) return { sessionId: null, questions: [] as SafeExercise[] };
+    if (questions.length === 0)
+      return {
+        sessionId: null,
+        questions: [] as SafeExercise[],
+        answeredIds: [] as string[],
+        correctCount: 0,
+      };
     const { data: session, error: sessionError } = await context.supabase
       .from("preparation_practice_sessions")
       .insert({
@@ -527,7 +579,7 @@ export const startPreparationPractice = createServerFn({ method: "POST" })
       .select("id")
       .single();
     if (sessionError) throw new Error(sessionError.message);
-    return { sessionId: session.id, questions };
+    return { sessionId: session.id, questions, answeredIds: [] as string[], correctCount: 0 };
   });
 
 export const recordPreparationPracticeAttempt = createServerFn({ method: "POST" })

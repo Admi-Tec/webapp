@@ -1,9 +1,9 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { zodValidator } from "@tanstack/zod-adapter";
 import { z } from "zod";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   getTopicBySlug,
   listExercises,
@@ -73,17 +73,28 @@ function PracticePage() {
   const recordFn = useServerFn(recordAttempt);
   const startCycleFn = useServerFn(startPreparationPractice);
   const recordCycleFn = useServerFn(recordPreparationPracticeAttempt);
+  const queryClient = useQueryClient();
+  const practiceQueryKey = [
+    "practice-exercises",
+    "v2",
+    topicSlug,
+    subtopic ?? "all",
+    cycleTopic ?? "free",
+  ] as const;
 
   const q = useQuery({
-    queryKey: ["practice-exercises", topicSlug, subtopic ?? "all", cycleTopic ?? "free"],
+    queryKey: practiceQueryKey,
     queryFn: async () => {
       if (cycleTopic) return startCycleFn({ data: { cycleTopicId: cycleTopic } });
       const questions = await listFn({
         data: { topicSlug, subtopicSlug: subtopic, limit: subtopic ? 200 : 100 },
       });
-      return { sessionId: null, questions };
+      return { sessionId: null, questions, answeredIds: [] as string[], correctCount: 0 };
     },
     staleTime: Infinity,
+    // Active sessions remain fresh in the cache, so leaving and returning to
+    // the route can render immediately without another loading state.
+    refetchOnMount: (query) => query.state.isInvalidated,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
@@ -116,16 +127,28 @@ function PracticePage() {
   } | null>(null);
   const [stats, setStats] = useState({ correct: 0, done: 0 });
   const [startTime, setStartTime] = useState<number>(Date.now());
+  const initializedRunRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (q.data && order.length === 0) {
-      const ids = q.data.questions.map((e) => e.id);
-      const shuffled = cycleTopic ? ids : [...ids].sort(() => Math.random() - 0.5);
-      // Practicing a specific subtopic is a focused round: 10 random exercises,
-      // or fewer if the subtopic doesn't have that many.
-      setOrder(cycleTopic ? shuffled : subtopic ? shuffled.slice(0, 10) : shuffled);
-    }
-  }, [cycleTopic, q.data, order.length, subtopic]);
+    if (!q.data) return;
+    const runKey = q.data.sessionId ?? "free";
+    if (initializedRunRef.current === runKey) return;
+
+    const ids = q.data.questions.map((exercise) => exercise.id);
+    const shuffled = cycleTopic ? ids : [...ids].sort(() => Math.random() - 0.5);
+    // Practicing a specific subtopic is a focused round: 10 random exercises,
+    // or fewer if the subtopic doesn't have that many.
+    const nextOrder = cycleTopic ? shuffled : subtopic ? shuffled.slice(0, 10) : shuffled;
+    const answeredIds = new Set(q.data.answeredIds);
+    const firstPendingIndex = nextOrder.findIndex((id) => !answeredIds.has(id));
+    setOrder(nextOrder);
+    setIdx(firstPendingIndex >= 0 ? firstPendingIndex : 0);
+    setSelected(null);
+    setResult(null);
+    setStats({ correct: q.data.correctCount, done: q.data.answeredIds.length });
+    setStartTime(Date.now());
+    initializedRunRef.current = runKey;
+  }, [cycleTopic, q.data, subtopic]);
 
   useEffect(() => {
     setSelected(null);
@@ -159,7 +182,13 @@ function PracticePage() {
     enabled: !!currentId && !!result,
   });
 
-  if (q.isLoading)
+  const fetchedRunKey = q.data?.sessionId ?? (q.data ? "free" : null);
+  const isPreparingRun =
+    q.isLoading ||
+    (cycleTopic && q.isFetching) ||
+    (!!fetchedRunKey && initializedRunRef.current !== fetchedRunKey);
+
+  if (isPreparingRun)
     return (
       <div className="mx-auto max-w-3xl px-4 py-10">
         <nav className="text-xs text-muted-foreground">
@@ -232,6 +261,15 @@ function PracticePage() {
             });
       setResult(r);
       setStats((s) => ({ correct: s.correct + (r.isCorrect ? 1 : 0), done: s.done + 1 }));
+      if (cycleTopic && r.completed) {
+        // The current data remains visible on the result screen, but the next
+        // visit must ask the server for a new session.
+        await queryClient.invalidateQueries({
+          queryKey: practiceQueryKey,
+          exact: true,
+          refetchType: "none",
+        });
+      }
     } catch {
       // Transient network/server error — silently skip; the student can just retry.
     }

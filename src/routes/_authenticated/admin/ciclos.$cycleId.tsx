@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowDown, ArrowLeft, ArrowUp, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -23,6 +23,7 @@ import {
   movePreparationItem,
   removeCourseFromPreparationCycle,
   removeTopicFromPreparationCourse,
+  savePreparationCycle,
   updatePreparationCycleTopic,
 } from "@/lib/preparation.functions";
 
@@ -40,6 +41,11 @@ type EditableUnit = {
   isPublished: boolean;
 };
 
+type EditableCycle = {
+  name: string;
+  slug: string;
+};
+
 function PreparationCycleBuilder() {
   const { cycleId } = Route.useParams();
   const getFn = useServerFn(getPreparationCycleAdmin);
@@ -49,12 +55,37 @@ function PreparationCycleBuilder() {
   const removeTopicFn = useServerFn(removeTopicFromPreparationCourse);
   const moveFn = useServerFn(movePreparationItem);
   const updateUnitFn = useServerFn(updatePreparationCycleTopic);
+  const saveCycleFn = useServerFn(savePreparationCycle);
   const queryClient = useQueryClient();
   const queryKey = ["admin-preparation-cycle", cycleId];
   const q = useQuery({ queryKey, queryFn: () => getFn({ data: { id: cycleId } }) });
   const [courseId, setCourseId] = useState("");
   const [topicSelections, setTopicSelections] = useState<Record<string, string>>({});
   const [editing, setEditing] = useState<EditableUnit | null>(null);
+  const [editingCycle, setEditingCycle] = useState<EditableCycle | null>(null);
+
+  const renameCycleM = useMutation({
+    mutationFn: ({ name, slug }: EditableCycle) =>
+      saveCycleFn({
+        data: {
+          id: cycleId,
+          name,
+          slug,
+          universityId: q.data!.cycle.university_id,
+          description: q.data!.cycle.description,
+          status: q.data!.cycle.status as "draft" | "published" | "archived",
+        },
+      }),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey }),
+        queryClient.invalidateQueries({ queryKey: ["admin-preparation-cycles"] }),
+      ]);
+      setEditingCycle(null);
+      toast.success("Datos del ciclo actualizados");
+    },
+    onError: (error) => toast.error(error.message),
+  });
 
   const refresh = () => queryClient.invalidateQueries({ queryKey });
   const act = async (work: () => Promise<unknown>, success?: string) => {
@@ -83,6 +114,16 @@ function PreparationCycleBuilder() {
         </Button>
         <div className="flex flex-wrap items-center gap-2">
           <h2 className="font-display text-2xl font-bold">{cycle.name}</h2>
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8"
+            aria-label="Editar nombre y slug del ciclo"
+            onClick={() => setEditingCycle({ name: cycle.name, slug: cycle.slug })}
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
           <Badge variant={cycle.status === "published" ? "default" : "secondary"}>
             {cycle.status === "published" ? "Publicado" : "Borrador"}
           </Badge>
@@ -91,6 +132,88 @@ function PreparationCycleBuilder() {
           {cycle.university?.name} · Construye la ruta en el orden en que estudiará el alumno.
         </p>
       </div>
+
+      <Dialog open={editingCycle !== null} onOpenChange={(open) => !open && setEditingCycle(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar ciclo</DialogTitle>
+          </DialogHeader>
+          <form
+            className="space-y-4"
+            onSubmit={(event) => {
+              event.preventDefault();
+              const name = editingCycle?.name.trim();
+              const slug = editingCycle?.slug.trim();
+              if (name && slug) renameCycleM.mutate({ name, slug });
+            }}
+          >
+            <div className="space-y-1.5">
+              <Label htmlFor="cycle-edit-name">Nombre</Label>
+              <Input
+                id="cycle-edit-name"
+                value={editingCycle?.name ?? ""}
+                onChange={(event) =>
+                  setEditingCycle((current) =>
+                    current ? { ...current, name: event.target.value } : current,
+                  )
+                }
+                minLength={2}
+                maxLength={120}
+                autoFocus
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="cycle-edit-slug">Slug</Label>
+              <Input
+                id="cycle-edit-slug"
+                value={editingCycle?.slug ?? ""}
+                onChange={(event) =>
+                  setEditingCycle((current) =>
+                    current
+                      ? {
+                          ...current,
+                          slug: event.target.value
+                            .toLowerCase()
+                            .replace(/[^a-z0-9]+/g, "-")
+                            .replace(/(^-|-$)/g, ""),
+                        }
+                      : current,
+                  )
+                }
+                minLength={2}
+                maxLength={70}
+                pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
+                required
+              />
+              <p className="text-xs text-muted-foreground">
+                Cambiarlo también modifica la URL pública del ciclo.
+              </p>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setEditingCycle(null)}
+                disabled={renameCycleM.isPending}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                disabled={
+                  renameCycleM.isPending ||
+                  !editingCycle?.name.trim() ||
+                  !editingCycle.slug.trim() ||
+                  (editingCycle.name.trim() === cycle.name && editingCycle.slug === cycle.slug)
+                }
+              >
+                {renameCycleM.isPending ? "Guardando…" : "Guardar nombre"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <section className="rounded-lg border border-border bg-card p-4 sm:p-5">
         <h3 className="font-semibold">Añadir curso</h3>
