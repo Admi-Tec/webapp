@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Tables } from "@/integrations/supabase/types";
 import { assertAdmin } from "@/lib/admin.functions";
+import { EXERCISE_IMAGES_BUCKET } from "@/lib/storage";
 
 export type MasteryStatus =
   | "not_started"
@@ -378,11 +379,23 @@ export const listMyPreparationCycles = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from("preparation_cycles")
-      .select("id,name,slug,description,university:universities(id,name,short_name)")
+      .select("id,name,slug,description,university:universities(id,name,short_name,logo_path)")
       .eq("status", "published")
       .order("updated_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return data ?? [];
+    return (data ?? []).map((cycle) => ({
+      ...cycle,
+      university: cycle.university
+        ? {
+            ...cycle.university,
+            logoUrl: cycle.university.logo_path
+              ? context.supabase.storage
+                  .from(EXERCISE_IMAGES_BUCKET)
+                  .getPublicUrl(cycle.university.logo_path).data.publicUrl
+              : null,
+          }
+        : null,
+    }));
   });
 
 const slugInput = z.object({ slug: z.string().min(1).max(80) });

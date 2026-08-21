@@ -148,38 +148,33 @@ export const listPublishedExams = createServerFn({ method: "GET" })
     }));
   });
 
-const listPublishedTemplatesInput = z.object({ universityId: z.string().uuid().optional() });
-
-export const listPublishedTemplates = createServerFn({ method: "GET" })
-  .inputValidator((d) => listPublishedTemplatesInput.parse(d ?? {}))
-  .handler(async ({ data }) => {
-    const sb = publicClient();
-    let query = sb
-      .from("exams")
-      .select(
-        "id, title, description, time_limit_min, passing_score, max_attempts, university:universities(id, slug, short_name), exam_template_rules(question_count)",
-      )
-      .eq("status", "published")
-      .eq("exam_type", "template")
-      .order("created_at", { ascending: false });
-    if (data?.universityId) query = query.eq("university_id", data.universityId);
-    const { data: exams, error } = await query;
-    if (error) throw new Error(error.message);
-    return ((exams ?? []) as TemplateListRow[]).map((e) => ({
-      id: e.id,
-      title: e.title,
-      description: e.description,
-      time_limit_min: e.time_limit_min,
-      passing_score: e.passing_score,
-      max_attempts: e.max_attempts,
-      university: e.university,
-      totalQuestions: (e.exam_template_rules ?? []).reduce(
-        (sum, r) => sum + (r.question_count ?? 0),
-        0,
-      ),
-      ruleCount: (e.exam_template_rules ?? []).length,
-    }));
-  });
+export const listPublishedTemplates = createServerFn({ method: "GET" }).handler(async () => {
+  const sb = publicClient();
+  const query = sb
+    .from("exams")
+    .select(
+      "id, title, description, time_limit_min, passing_score, max_attempts, university:universities(id, slug, short_name), exam_template_rules(question_count)",
+    )
+    .eq("status", "published")
+    .eq("exam_type", "template")
+    .order("created_at", { ascending: false });
+  const { data: exams, error } = await query;
+  if (error) throw new Error(error.message);
+  return ((exams ?? []) as TemplateListRow[]).map((e) => ({
+    id: e.id,
+    title: e.title,
+    description: e.description,
+    time_limit_min: e.time_limit_min,
+    passing_score: e.passing_score,
+    max_attempts: e.max_attempts,
+    university: e.university,
+    totalQuestions: (e.exam_template_rules ?? []).reduce(
+      (sum, r) => sum + (r.question_count ?? 0),
+      0,
+    ),
+    ruleCount: (e.exam_template_rules ?? []).length,
+  }));
+});
 
 export const getTemplatePreview = createServerFn({ method: "GET" })
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))

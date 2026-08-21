@@ -1,21 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Timer, Shuffle, Play, ChevronDown, History, Lock, LogIn } from "lucide-react";
 import { listPublishedTemplates, listMyTemplateSessions } from "@/lib/exams.functions";
 type TemplateSession = Awaited<ReturnType<typeof listMyTemplateSessions>>[number];
-import { getFullProfile, listAllUniversities } from "@/lib/profile.functions";
 import { useSignedIn } from "@/hooks/use-signed-in";
 import { ExamAttemptRow } from "@/components/exam-attempt-row";
 import { PremiumLockChip, usePremiumGate } from "@/components/premium/premium-gate";
@@ -38,27 +30,10 @@ function SimulacrosPage() {
   const signedIn = useSignedIn();
   const listFn = useServerFn(listPublishedTemplates);
   const sessionsFn = useServerFn(listMyTemplateSessions);
-  const profileFn = useServerFn(getFullProfile);
-  const universitiesFn = useServerFn(listAllUniversities);
 
-  const [universityId, setUniversityId] = useState<string | "all" | "">("");
-
-  const profileQ = useQuery({
-    queryKey: ["full-profile-mini"],
-    queryFn: () => profileFn(),
-    enabled: signedIn === true,
-  });
-  const universitiesQ = useQuery({
-    queryKey: ["all-universities"],
-    queryFn: () => universitiesFn(),
-  });
   const q = useQuery({
-    queryKey: ["published-templates", universityId],
-    queryFn: () =>
-      listFn({
-        data: { universityId: universityId && universityId !== "all" ? universityId : undefined },
-      }),
-    enabled: universityId !== "",
+    queryKey: ["published-templates"],
+    queryFn: () => listFn(),
   });
   const sessionsQ = useQuery({
     queryKey: ["my-template-sessions"],
@@ -69,12 +44,6 @@ function SimulacrosPage() {
   // Plantillas generales: gratis. Plantillas de una universidad específica:
   // Premium (gating visual — el candado explica en vez de ocultar).
   const premium = usePremiumGate("los simulacros específicos por universidad");
-
-  useEffect(() => {
-    if (universityId === "" && signedIn !== null) {
-      setUniversityId(profileQ.data?.universities[0]?.university_id ?? "all");
-    }
-  }, [profileQ.data, universityId, signedIn]);
 
   const sessionsByExam = new Map<string, TemplateSession[]>();
   (sessionsQ.data ?? []).forEach((s) => {
@@ -99,9 +68,6 @@ function SimulacrosPage() {
     navigate({ to: "/auth" });
   }
 
-  const showIncompleteProfileHint =
-    signedIn === true && profileQ.data && profileQ.data.universities.length === 0;
-
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
       <header className="mb-6">
@@ -114,34 +80,6 @@ function SimulacrosPage() {
           uno, obtendrás una combinación distinta.
         </p>
       </header>
-
-      <div className="mb-6 flex flex-wrap items-center gap-3">
-        <div className="max-w-xs flex-1">
-          <Select value={universityId} onValueChange={(v) => setUniversityId(v)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Universidad" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas las universidades</SelectItem>
-              {(universitiesQ.data ?? [])
-                .filter((u) => u.active)
-                .map((u) => (
-                  <SelectItem key={u.id} value={u.id}>
-                    {u.short_name ?? u.name}
-                  </SelectItem>
-                ))}
-            </SelectContent>
-          </Select>
-        </div>
-        {showIncompleteProfileHint && (
-          <p className="text-xs text-muted-foreground">
-            Aún no elegiste tu universidad objetivo.{" "}
-            <Link to="/perfil" className="font-medium text-primary hover:underline">
-              Complétalo en tu perfil →
-            </Link>
-          </p>
-        )}
-      </div>
 
       {q.isLoading && (
         <div className="flex flex-col gap-4">
