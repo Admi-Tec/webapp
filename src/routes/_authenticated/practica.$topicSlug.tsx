@@ -23,9 +23,15 @@ import { ReportProblemDialog } from "@/components/report-problem-dialog";
 import { ZoomableImage } from "@/components/zoomable-image";
 import { ExercisePlayerSkeleton, LoadingNotice } from "@/components/skeletons";
 import { pageMeta } from "@/lib/site";
+import {
+  recordPreparationPracticeAttempt,
+  startPreparationPractice,
+} from "@/lib/preparation.functions";
 
 const searchSchema = z.object({
   subtopic: z.string().optional(),
+  cycleTopic: z.string().uuid().optional(),
+  cycleSlug: z.string().optional(),
 });
 
 export const Route = createFileRoute("/_authenticated/practica/$topicSlug")({
@@ -61,15 +67,25 @@ export const Route = createFileRoute("/_authenticated/practica/$topicSlug")({
 
 function PracticePage() {
   const { topicSlug } = Route.useParams();
-  const { subtopic } = Route.useSearch();
+  const { subtopic, cycleTopic, cycleSlug } = Route.useSearch();
   const { topic } = Route.useLoaderData();
   const listFn = useServerFn(listExercises);
   const recordFn = useServerFn(recordAttempt);
+  const startCycleFn = useServerFn(startPreparationPractice);
+  const recordCycleFn = useServerFn(recordPreparationPracticeAttempt);
 
   const q = useQuery({
-    queryKey: ["practice-exercises", topicSlug, subtopic ?? "all"],
-    queryFn: () =>
-      listFn({ data: { topicSlug, subtopicSlug: subtopic, limit: subtopic ? 200 : 100 } }),
+    queryKey: ["practice-exercises", topicSlug, subtopic ?? "all", cycleTopic ?? "free"],
+    queryFn: async () => {
+      if (cycleTopic) return startCycleFn({ data: { cycleTopicId: cycleTopic } });
+      const questions = await listFn({
+        data: { topicSlug, subtopicSlug: subtopic, limit: subtopic ? 200 : 100 },
+      });
+      return { sessionId: null, questions };
+    },
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 
   const profileFn = useServerFn(getFullProfile);
@@ -91,19 +107,25 @@ function PracticePage() {
   const [order, setOrder] = useState<string[]>([]);
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
-  const [result, setResult] = useState<{ isCorrect: boolean; correctChoice: number } | null>(null);
+  const [result, setResult] = useState<{
+    isCorrect: boolean;
+    correctChoice: number;
+    completed?: boolean;
+    score?: number | null;
+    masteryStatus?: string | null;
+  } | null>(null);
   const [stats, setStats] = useState({ correct: 0, done: 0 });
   const [startTime, setStartTime] = useState<number>(Date.now());
 
   useEffect(() => {
     if (q.data && order.length === 0) {
-      const ids = q.data.map((e) => e.id);
-      const shuffled = [...ids].sort(() => Math.random() - 0.5);
+      const ids = q.data.questions.map((e) => e.id);
+      const shuffled = cycleTopic ? ids : [...ids].sort(() => Math.random() - 0.5);
       // Practicing a specific subtopic is a focused round: 10 random exercises,
       // or fewer if the subtopic doesn't have that many.
-      setOrder(subtopic ? shuffled.slice(0, 10) : shuffled);
+      setOrder(cycleTopic ? shuffled : subtopic ? shuffled.slice(0, 10) : shuffled);
     }
-  }, [q.data, order.length, subtopic]);
+  }, [cycleTopic, q.data, order.length, subtopic]);
 
   useEffect(() => {
     setSelected(null);
@@ -112,7 +134,7 @@ function PracticePage() {
   }, [idx]);
 
   const [imgUrl, setImgUrl] = useState<string | null>(null);
-  const currentImagePath = q.data?.find((e) => e.id === order[idx])?.statement_image_path;
+  const currentImagePath = q.data?.questions.find((e) => e.id === order[idx])?.statement_image_path;
   useEffect(() => {
     let alive = true;
     setImgUrl(null);
@@ -160,33 +182,54 @@ function PracticePage() {
         </div>
       </div>
     );
-  if (!q.data || q.data.length === 0) {
+  if (!q.data || q.data.questions.length === 0) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-16 text-center">
         <p className="text-muted-foreground">No hay preguntas disponibles para este tema.</p>
-        <Link to="/temas" className="mt-4 inline-block text-primary hover:underline">
-          Volver a cursos
-        </Link>
+        {cycleSlug ? (
+          <Link
+            to="/preparacion/$cycleSlug"
+            params={{ cycleSlug }}
+            className="mt-4 inline-block text-primary hover:underline"
+          >
+            Volver al ciclo
+          </Link>
+        ) : (
+          <Link to="/temas" className="mt-4 inline-block text-primary hover:underline">
+            Volver a cursos
+          </Link>
+        )}
       </div>
     );
   }
 
-  const current = q.data.find((e) => e.id === currentId);
+  const current = q.data.questions.find((e) => e.id === currentId);
   if (!current) return null;
   const total = order.length;
+  const practiceData = q.data;
 
   async function submit() {
     if (selected === null || result || !current) return;
     const timeSpent = Math.min(Date.now() - startTime, 30 * 60 * 1000);
     try {
-      const r = await recordFn({
-        data: {
-          exerciseId: current.id,
-          selectedChoice: selected,
-          timeSpentMs: timeSpent,
-          examSessionId: null,
-        },
-      });
+      const r =
+        cycleTopic && practiceData.sessionId
+          ? await recordCycleFn({
+              data: {
+                sessionId: practiceData.sessionId,
+                exerciseId: current.id,
+                selectedChoice: selected,
+                timeSpentMs: timeSpent,
+              },
+            })
+          : await recordFn({
+              data: {
+                exerciseId: current.id,
+                selectedChoice: selected,
+                timeSpentMs: timeSpent,
+                examSessionId: null,
+              },
+            });
       setResult(r);
       setStats((s) => ({ correct: s.correct + (r.isCorrect ? 1 : 0), done: s.done + 1 }));
     } catch {
@@ -222,7 +265,9 @@ function PracticePage() {
         <div>
           <h1 className="font-display text-2xl font-bold">Práctica: {topic.name}</h1>
           <p className="text-sm text-muted-foreground">
-            Sin tiempo. Retroalimentación inmediata. Al terminar la ronda, se reordena.
+            {cycleTopic
+              ? "Ronda del ciclo. Tu resultado actualizará el dominio de este tema."
+              : "Sin tiempo. Retroalimentación inmediata. Al terminar la ronda, se reordena."}
           </p>
         </div>
         <div className="text-sm text-muted-foreground">
@@ -340,6 +385,15 @@ function PracticePage() {
               className="press w-full min-h-11 sm:w-auto"
             >
               Comprobar respuesta
+            </Button>
+          ) : cycleTopic && result.completed && cycleSlug ? (
+            <Button asChild className="press w-full min-h-11 sm:w-auto">
+              <Link
+                to="/preparacion/$cycleSlug/$cycleTopicId"
+                params={{ cycleSlug, cycleTopicId: cycleTopic }}
+              >
+                Ver resultado del tema <ChevronRight className="ml-1 h-4 w-4" />
+              </Link>
             </Button>
           ) : (
             <Button onClick={next} className="press w-full min-h-11 sm:w-auto">

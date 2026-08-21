@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   Star,
   Trophy,
+  BookOpen,
   ArrowLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,7 @@ const publicNav = [
 
 const accountNav = [
   { to: "/panel", label: "Panel", icon: LayoutDashboard },
+  { to: "/preparacion", label: "Preparación", icon: BookOpen },
   { to: "/perfil", label: "Perfil", icon: User },
   { to: "/favoritas", label: "Favoritas", icon: Star },
   { to: "/ranking", label: "Ranking", icon: Trophy },

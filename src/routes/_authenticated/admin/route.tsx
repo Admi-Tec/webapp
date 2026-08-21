@@ -24,6 +24,7 @@ const NAV_ITEMS = [
   { to: "/admin/importar", label: "Importar" },
   { to: "/admin/examenes", label: "Exámenes" },
   { to: "/admin/materias", label: "Cursos" },
+  { to: "/admin/ciclos", label: "Ciclos" },
   { to: "/admin/universidades", label: "Universidades" },
   { to: "/admin/carreras", label: "Carreras" },
   { to: "/admin/puntajes-minimos", label: "Puntajes mínimos" },

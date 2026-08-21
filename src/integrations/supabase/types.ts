@@ -669,6 +669,196 @@ export type Database = {
         };
         Relationships: [];
       };
+      preparation_cycle_courses: {
+        Row: {
+          created_at: string;
+          cycle_id: string;
+          id: string;
+          position: number;
+          topic_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          cycle_id: string;
+          id?: string;
+          position?: number;
+          topic_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          cycle_id?: string;
+          id?: string;
+          position?: number;
+          topic_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "preparation_cycle_courses_cycle_id_fkey";
+            columns: ["cycle_id"];
+            isOneToOne: false;
+            referencedRelation: "preparation_cycles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "preparation_cycle_courses_topic_id_fkey";
+            columns: ["topic_id"];
+            isOneToOne: false;
+            referencedRelation: "topics";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      preparation_cycle_topics: {
+        Row: {
+          created_at: string;
+          cycle_course_id: string;
+          id: string;
+          is_published: boolean;
+          position: number;
+          practice_question_count: number;
+          practice_selection_mode: string;
+          subtopic_id: string;
+          title_override: string | null;
+          updated_at: string;
+          video_duration_seconds: number | null;
+          youtube_url: string | null;
+          youtube_video_id: string | null;
+        };
+        Insert: {
+          created_at?: string;
+          cycle_course_id: string;
+          id?: string;
+          is_published?: boolean;
+          position?: number;
+          practice_question_count?: number;
+          practice_selection_mode?: string;
+          subtopic_id: string;
+          title_override?: string | null;
+          updated_at?: string;
+          video_duration_seconds?: number | null;
+          youtube_url?: string | null;
+          youtube_video_id?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          cycle_course_id?: string;
+          id?: string;
+          is_published?: boolean;
+          position?: number;
+          practice_question_count?: number;
+          practice_selection_mode?: string;
+          subtopic_id?: string;
+          title_override?: string | null;
+          updated_at?: string;
+          video_duration_seconds?: number | null;
+          youtube_url?: string | null;
+          youtube_video_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "preparation_cycle_topics_cycle_course_id_fkey";
+            columns: ["cycle_course_id"];
+            isOneToOne: false;
+            referencedRelation: "preparation_cycle_courses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "preparation_cycle_topics_subtopic_id_fkey";
+            columns: ["subtopic_id"];
+            isOneToOne: false;
+            referencedRelation: "subtopics";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      preparation_cycles: {
+        Row: {
+          created_at: string;
+          description: string | null;
+          id: string;
+          name: string;
+          slug: string;
+          status: string;
+          university_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          name: string;
+          slug: string;
+          status?: string;
+          university_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          name?: string;
+          slug?: string;
+          status?: string;
+          university_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "preparation_cycles_university_id_fkey";
+            columns: ["university_id"];
+            isOneToOne: false;
+            referencedRelation: "universities";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      preparation_practice_sessions: {
+        Row: {
+          answered_ids: string[];
+          completed_at: string | null;
+          correct_count: number;
+          cycle_topic_id: string;
+          id: string;
+          question_ids: string[];
+          started_at: string;
+          status: string;
+          user_id: string;
+        };
+        Insert: {
+          answered_ids?: string[];
+          completed_at?: string | null;
+          correct_count?: number;
+          cycle_topic_id: string;
+          id?: string;
+          question_ids: string[];
+          started_at?: string;
+          status?: string;
+          user_id: string;
+        };
+        Update: {
+          answered_ids?: string[];
+          completed_at?: string | null;
+          correct_count?: number;
+          cycle_topic_id?: string;
+          id?: string;
+          question_ids?: string[];
+          started_at?: string;
+          status?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "preparation_practice_sessions_cycle_topic_id_fkey";
+            columns: ["cycle_topic_id"];
+            isOneToOne: false;
+            referencedRelation: "preparation_cycle_topics";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       profiles: {
         Row: {
           avatar_url: string | null;
@@ -788,6 +978,53 @@ export type Database = {
             columns: ["university_id"];
             isOneToOne: false;
             referencedRelation: "universities";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      student_cycle_topic_progress: {
+        Row: {
+          best_score: number | null;
+          created_at: string;
+          cycle_topic_id: string;
+          id: string;
+          last_score: number | null;
+          mastery_status: string;
+          practice_completed_at: string | null;
+          theory_completed_at: string | null;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          best_score?: number | null;
+          created_at?: string;
+          cycle_topic_id: string;
+          id?: string;
+          last_score?: number | null;
+          mastery_status?: string;
+          practice_completed_at?: string | null;
+          theory_completed_at?: string | null;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          best_score?: number | null;
+          created_at?: string;
+          cycle_topic_id?: string;
+          id?: string;
+          last_score?: number | null;
+          mastery_status?: string;
+          practice_completed_at?: string | null;
+          theory_completed_at?: string | null;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "student_cycle_topic_progress_cycle_topic_id_fkey";
+            columns: ["cycle_topic_id"];
+            isOneToOne: false;
+            referencedRelation: "preparation_cycle_topics";
             referencedColumns: ["id"];
           },
         ];

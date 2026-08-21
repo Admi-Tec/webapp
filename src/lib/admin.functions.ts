@@ -6,7 +6,7 @@ import { z } from "zod";
 
 type AdminSupabaseClient = SupabaseClient<Database>;
 
-async function assertAdmin(context: { supabase: AdminSupabaseClient; userId: string }) {
+export async function assertAdmin(context: { supabase: AdminSupabaseClient; userId: string }) {
   const { data, error } = await context.supabase.rpc("has_role", {
     _user_id: context.userId,
     _role: "admin",
@@ -1619,6 +1619,7 @@ export const getAdminStudent = createServerFn({ method: "GET" })
     ]) {
       if (result.error) throw new Error(result.error.message);
     }
+    if (!profile.data) throw new Error("Perfil no encontrado");
     const identities = authResult.user.identities ?? [];
     return {
       profile: profile.data,
