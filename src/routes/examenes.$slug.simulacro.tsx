@@ -2,7 +2,12 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/examenes/$slug/simulacro")({
   loader: async ({ params }) => {
-    throw redirect({ to: "/examenes/$slug", params: { slug: params.slug } });
+    throw redirect({
+      to: "/examenes/$slug",
+      params: { slug: params.slug },
+      hash: "simulacros",
+      statusCode: 301,
+    });
   },
   component: () => null,
 });

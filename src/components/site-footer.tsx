@@ -1,14 +1,26 @@
 import { Link } from "@tanstack/react-router";
 import { BookOpenText, Mail } from "lucide-react";
 import { SITE_NAME, SOCIAL_LINKS } from "@/lib/site";
-import { InstagramIcon, TikTokIcon, WhatsAppIcon } from "@/components/social-icons";
+import { FacebookIcon, InstagramIcon, TikTokIcon, WhatsAppIcon } from "@/components/social-icons";
 import { ContactDialog } from "@/components/contact-dialog";
 
 const SOCIALS = [
   {
+    label: "Facebook",
+    href: SOCIAL_LINKS.facebook,
+    Icon: FacebookIcon,
+    iconClassName: "text-[#1877F2]",
+  },
+  {
     label: "Instagram",
     href: SOCIAL_LINKS.instagram,
     Icon: InstagramIcon,
+    iconClassName: "",
+  },
+  {
+    label: "TikTok",
+    href: SOCIAL_LINKS.tiktok,
+    Icon: TikTokIcon,
     iconClassName: "",
   },
   {

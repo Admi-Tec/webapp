@@ -2,6 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { listUniversities } from "@/lib/exercises.functions";
 import { pageMeta } from "@/lib/site";
+import { SimulacroCatalog } from "@/components/simulacro-catalog";
+import { publishedTemplatesQO } from "@/lib/exam-catalog";
 
 const qo = queryOptions({ queryKey: ["universities"], queryFn: () => listUniversities() });
 
@@ -11,9 +13,13 @@ export const Route = createFileRoute("/examenes/")({
       path: "/examenes",
       title: "Exámenes de admisión por universidad",
       description:
-        "Rinde exámenes de admisión oficiales pasados de la UNI, San Marcos, PUCP, UNALM, UNFV y más, en las condiciones reales del examen.",
+        "Encuentra exámenes oficiales de años anteriores y genera simulacros con preguntas aleatorias para la UNI, San Marcos, PUCP, UNALM, UNFV y más.",
     }),
-  loader: ({ context }) => context.queryClient.ensureQueryData(qo),
+  loader: ({ context }) =>
+    Promise.all([
+      context.queryClient.ensureQueryData(qo),
+      context.queryClient.ensureQueryData(publishedTemplatesQO),
+    ]),
   component: ExamHub,
   pendingComponent: ExamHubPending,
   pendingMs: 150,
@@ -31,7 +37,7 @@ function ExamHubPending() {
       <header>
         <h1 className="font-display text-3xl font-bold sm:text-4xl">Exámenes de admisión</h1>
         <p className="mt-2 max-w-2xl text-muted-foreground">
-          Elige una universidad para acceder a sus exámenes oficiales cronometrados.
+          Elige tu universidad para rendir exámenes oficiales o generar un simulacro.
         </p>
       </header>
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -62,7 +68,7 @@ function ExamHub() {
       <header>
         <h1 className="font-display text-3xl font-bold sm:text-4xl">Exámenes de admisión</h1>
         <p className="mt-2 max-w-2xl text-muted-foreground">
-          Elige una universidad para acceder a sus exámenes oficiales cronometrados.
+          Elige tu universidad para rendir exámenes oficiales o generar un simulacro.
         </p>
       </header>
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -96,6 +102,7 @@ function ExamHub() {
           </Link>
         ))}
       </div>
+      <SimulacroCatalog />
     </div>
   );
 }

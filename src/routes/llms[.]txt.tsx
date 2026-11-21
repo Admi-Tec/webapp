@@ -19,9 +19,8 @@ postulantes.
 
 - [Inicio](${absoluteUrl("/")}): presentación del producto y propuesta de valor.
 - [Cursos de práctica](${absoluteUrl("/temas")}): ejercicios resueltos por curso y tema.
-- [Exámenes por universidad](${absoluteUrl("/examenes")}): exámenes oficiales pasados agrupados por universidad.
+- [Exámenes por universidad](${absoluteUrl("/examenes")}): exámenes oficiales pasados y simulacros con preguntas aleatorias, agrupados por universidad; también incluye los simulacros generales.
 - [Exámenes cronometrados](${absoluteUrl("/examenes-oficiales")}): exámenes bajo tiempo real con corrección automática.
-- [Simulacros](${absoluteUrl("/simulacros")}): simulacros generados con la distribución real de cursos del examen.
 - [Planes y precios](${absoluteUrl("/planes")}): planes gratis y Premium.
 - [Libro de Reclamaciones](${absoluteUrl("/libro-de-reclamaciones")}): canal formal de quejas y reclamos.
 

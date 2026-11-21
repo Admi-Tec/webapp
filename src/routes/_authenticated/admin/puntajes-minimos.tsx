@@ -155,10 +155,10 @@ function PuntajesMinimosPage() {
       const payload = { universityId, examId, careerId, minScore: minScoreNum };
       if (editing) {
         await updateFn({ data: { ...payload, id: editing.id } });
-        toast.success("Puntaje mínimo actualizado — se notificó a los estudiantes afectados");
+        toast.success("Puntaje mínimo actualizado. Se notificó a los estudiantes afectados");
       } else {
         await createFn({ data: payload });
-        toast.success("Puntaje mínimo creado — se notificó a los estudiantes afectados");
+        toast.success("Puntaje mínimo creado. Se notificó a los estudiantes afectados");
       }
       flashSaveFeedback("accepted");
       q.refetch();
@@ -174,7 +174,7 @@ function PuntajesMinimosPage() {
   async function onDelete(r: MinScoreRow) {
     const label = [r.exam?.title, r.career?.name, r.university?.short_name]
       .filter(Boolean)
-      .join(" — ");
+      .join(" - ");
     if (!confirm(`¿Eliminar el puntaje mínimo de "${label || "este registro"}"?`)) return;
     try {
       await delFn({ data: { id: r.id } });
@@ -204,7 +204,7 @@ function PuntajesMinimosPage() {
             <form onSubmit={onSubmit} className="space-y-3">
               <p className="text-xs text-muted-foreground">
                 Un puntaje mínimo siempre se define para una universidad, un examen y una carrera
-                específicos — los tres son obligatorios.
+                específicos. Los tres son obligatorios.
               </p>
               <div>
                 <Label>Universidad *</Label>
@@ -315,9 +315,9 @@ function PuntajesMinimosPage() {
             )}
             {q.data?.map((r: MinScoreRow) => (
               <TableRow key={r.id}>
-                <TableCell>{r.university?.short_name ?? "—"}</TableCell>
-                <TableCell>{r.exam?.title ?? "—"}</TableCell>
-                <TableCell>{r.career?.name ?? "—"}</TableCell>
+                <TableCell>{r.university?.short_name ?? "-"}</TableCell>
+                <TableCell>{r.exam?.title ?? "-"}</TableCell>
+                <TableCell>{r.career?.name ?? "-"}</TableCell>
                 <TableCell className="font-medium">{r.min_score}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-1">

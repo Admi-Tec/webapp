@@ -201,7 +201,7 @@ export function parseExerciseMarkdown(filename: string, raw: string): ParsedExer
   const { choices, letters } = parseChoices(alternativasSection);
   if (choices.length < 2) {
     errors.push(
-      "Faltan alternativas — se necesitan al menos 2 en la sección '## Alternativas' (formato 'A) texto').",
+      "Faltan alternativas: se necesitan al menos 2 en la sección '## Alternativas' (formato 'A) texto').",
     );
   }
 

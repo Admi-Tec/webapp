@@ -353,7 +353,7 @@ export function TopicAccuracyChart({
     let bars = aggregate(
       rowsForTopic,
       trendForTopic,
-      (r) => (r.subtopicId ? { id: r.subtopicId, name: r.subtopicName ?? "—" } : null),
+      (r) => (r.subtopicId ? { id: r.subtopicId, name: r.subtopicName ?? "-" } : null),
       detailQ.data.subtopicAvgAccuracy,
       universityId !== "all" ? (freqQ.data?.subtopicFrequency ?? null) : null,
     );

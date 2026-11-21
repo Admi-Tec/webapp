@@ -483,8 +483,7 @@ export function ExamForm({ initial }: { initial?: ExamFormValues }) {
         <div className="sm:col-span-2 rounded-md border border-border bg-card p-3">
           <Label className="text-base">Puntaje por pregunta</Label>
           <p className="mt-1 text-xs text-muted-foreground">
-            Propio de este examen — prellenado con +1 / -1 / 0, puedes ajustarlo solo para este
-            examen.
+            El puntaje empieza en +1 / -1 / 0. Puedes ajustarlo para este examen.
           </p>
           <div className="mt-2 grid grid-cols-3 gap-2">
             <div>

@@ -36,7 +36,7 @@ function TopicsIndexPending() {
         </p>
       </header>
       <div className="mt-6">
-        <LoadingNotice label="Cargando cursos disponibles ..." />
+        <LoadingNotice label="Cargando cursos disponibles" />
       </div>
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 6 }).map((_, i) => (

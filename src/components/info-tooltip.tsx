@@ -11,9 +11,11 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 export function InfoTooltip({
   children,
   className,
+  label = "Más información",
 }: {
   children: React.ReactNode;
   className?: string;
+  label?: string;
 }) {
   const [open, setOpen] = useState(false);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -39,7 +41,7 @@ export function InfoTooltip({
       <PopoverTrigger asChild>
         <button
           type="button"
-          aria-label="Más información"
+          aria-label={label}
           onMouseEnter={openOnHover}
           onMouseLeave={closeOnHoverOut}
           className={`inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-muted-foreground/60 transition-colors hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ${className ?? ""}`}

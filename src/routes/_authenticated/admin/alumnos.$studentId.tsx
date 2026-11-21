@@ -51,7 +51,7 @@ export const Route = createFileRoute("/_authenticated/admin/alumnos/$studentId")
   component: StudentDetailPage,
 });
 const fmt = new Intl.DateTimeFormat("es-PE", { dateStyle: "medium", timeStyle: "short" });
-const date = (value?: string | null) => (value ? fmt.format(new Date(value)) : "—");
+const date = (value?: string | null) => (value ? fmt.format(new Date(value)) : "-");
 const excerpt = (value?: string | null) =>
   value ? value.replace(/[#*_`]/g, "").slice(0, 90) : "Ejercicio";
 
@@ -242,7 +242,7 @@ function StudentDetailPage() {
                     {s.exam?.exam_type === "template" ? "Simulacro" : "Oficial"}
                   </TableCell>
                   <TableCell>
-                    {s.score ?? "—"}
+                    {s.score ?? "-"}
                     {s.max_score ? ` / ${s.max_score}` : ""}
                   </TableCell>
                   <TableCell>{s.status}</TableCell>

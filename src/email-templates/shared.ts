@@ -1,6 +1,6 @@
 // Helpers compartidos por los templates de src/email-templates/ — HTML de
 // correos transaccionales generados por contact.functions.ts (distinto de
-// los templates de Supabase Auth en /emails, que se pegan a mano en su
+// los templates de Supabase Auth en /email-supabase, que se pegan a mano en su
 // dashboard y nunca los ejecuta esta app).
 
 // Remitente de todos los correos que dispara la propia app (reclamos,

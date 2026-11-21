@@ -58,7 +58,7 @@ function RevisarPage() {
       await resolveFn({ data: { reportId, action } });
       toast.success(
         action === "resolve"
-          ? "Marcado como resuelto — se notificó al estudiante."
+          ? "Marcado como resuelto. Se notificó al estudiante."
           : "Reporte descartado.",
       );
       qc.invalidateQueries({ queryKey: ["admin-exercise-reports"] });
@@ -74,7 +74,7 @@ function RevisarPage() {
         <h2 className="font-display text-xl font-bold">Ejercicios a revisar</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Ejercicios reportados por estudiantes, y ejercicios sin reportes pero con calificación
-          promedio baja — ambos son señales de que algo podría estar mal.
+          promedio baja. En ambos casos, podría haber algún error.
         </p>
       </div>
 
@@ -175,8 +175,8 @@ function RevisarPage() {
           {(lowRatedQ.data ?? []).length})
         </h3>
         <p className="mt-1 text-xs text-muted-foreground">
-          No tienen un reporte puntual, pero su calificación promedio está por debajo de 2 estrellas
-          — vale la pena revisarlos igual.
+          No tienen un reporte puntual, pero su calificación promedio está por debajo de 2
+          estrellas. Vale la pena revisarlos igual.
         </p>
         <div className="mt-3 space-y-2">
           {lowRatedQ.isLoading && <p className="text-sm text-muted-foreground">Cargando…</p>}

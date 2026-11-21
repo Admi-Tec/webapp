@@ -996,7 +996,7 @@ async function notifyMinScoreUpdate(
     ),
   ];
   if (affected.length === 0) return;
-  const scopeLabel = [exam?.title, career?.name].filter(Boolean).join(" — ") || "tu perfil";
+  const scopeLabel = [exam?.title, career?.name].filter(Boolean).join(" - ") || "tu perfil";
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const title = `Se actualizó el puntaje mínimo de ingreso de ${scopeLabel}`;
   const body = `Ahora es ${minScore}.`;

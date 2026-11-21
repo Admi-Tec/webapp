@@ -168,7 +168,9 @@ function AdminImportExercises() {
     try {
       const res = await createTopicFn({ data: { name } });
       toast[res.duplicated ? "info" : "success"](
-        res.duplicated ? `El curso "${name}" ya existía — aplicado.` : `Curso "${name}" creado.`,
+        res.duplicated
+          ? `El curso "${name}" ya existía y se ha aplicado.`
+          : `Curso "${name}" creado.`,
       );
       await meta.refetch();
     } catch (e) {
@@ -189,7 +191,9 @@ function AdminImportExercises() {
     try {
       const res = await createSubtopicFn({ data: { topic_id: topicId, name } });
       toast[res.duplicated ? "info" : "success"](
-        res.duplicated ? `El tema "${name}" ya existía — aplicado.` : `Tema "${name}" creado.`,
+        res.duplicated
+          ? `El tema "${name}" ya existía y se ha aplicado.`
+          : `Tema "${name}" creado.`,
       );
       await meta.refetch();
     } catch (e) {
@@ -320,12 +324,12 @@ function AdminImportExercises() {
       const warnings: string[] = [];
       if (p.frontmatter.subtema && !subtopicMatch && o.subtopicId === undefined) {
         warnings.push(
-          `Tema "${p.frontmatter.subtema}" no reconocido — créalo abajo o se importará sin tema.`,
+          `Tema "${p.frontmatter.subtema}" no reconocido. Créalo abajo o se importará sin tema.`,
         );
       }
       if (p.frontmatter.universidad && !universityMatch && o.universityId === undefined) {
         warnings.push(
-          `Universidad "${p.frontmatter.universidad}" no reconocida — se importará sin universidad.`,
+          `Universidad "${p.frontmatter.universidad}" no reconocida. Se importará sin universidad.`,
         );
       }
 
@@ -424,7 +428,7 @@ function AdminImportExercises() {
         <h2 className="font-display text-xl font-bold">Importar ejercicios</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Sube una carpeta (o varios archivos sueltos) con un archivo <code>.md</code> por ejercicio
-          — frontmatter YAML + enunciado/alternativas/solución en markdown. Si un ejercicio
+          con frontmatter YAML y enunciado, alternativas y solución en markdown. Si un ejercicio
           referencia una imagen, inclúyela en la misma selección.
         </p>
       </div>
@@ -517,10 +521,10 @@ function AdminImportExercises() {
                 onValueChange={(v) => setExamId(v === "__none" ? null : v)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="— ninguno —" />
+                  <SelectValue placeholder="Ninguno" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__none">— ninguno (solo al banco) —</SelectItem>
+                  <SelectItem value="__none">Ninguno (solo al banco)</SelectItem>
                   {standardExams.map((e) => (
                     <SelectItem key={e.id} value={e.id}>
                       {e.title} · {e.questionCount} pregunta(s)
@@ -650,7 +654,7 @@ function ImportRowCard({
               <SelectValue placeholder="Sin resolver" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="__none">— sin curso —</SelectItem>
+              <SelectItem value="__none">Sin curso</SelectItem>
               {topics.map((t) => (
                 <SelectItem key={t.id} value={t.id}>
                   {t.name}
@@ -687,7 +691,7 @@ function ImportRowCard({
               <SelectValue placeholder="(ninguno)" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="__none">— ninguno —</SelectItem>
+              <SelectItem value="__none">Ninguno</SelectItem>
               {row.subtopicsForTopic.map((s) => (
                 <SelectItem key={s.id} value={s.id}>
                   {s.name}
@@ -723,7 +727,7 @@ function ImportRowCard({
               <SelectValue placeholder="Genérico (todas)" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="__none">Genérico — todas las universidades</SelectItem>
+              <SelectItem value="__none">Genérico (todas las universidades)</SelectItem>
               {universities.map((u) => (
                 <SelectItem key={u.id} value={u.id}>
                   {u.short_name}

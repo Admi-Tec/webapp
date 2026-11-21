@@ -200,7 +200,7 @@ export function ExerciseForm({ initial }: { initial?: ExerciseFormValues }) {
                 <SelectValue placeholder="(opcional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="__none">— ninguno —</SelectItem>
+                <SelectItem value="__none">Ninguno</SelectItem>
                 <SelectItem value="__new_subtopic__" disabled={!v.topic_id}>
                   + Agregar nuevo tema
                 </SelectItem>
@@ -233,7 +233,7 @@ export function ExerciseForm({ initial }: { initial?: ExerciseFormValues }) {
                 <SelectValue placeholder="Genérico (todas las universidades)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="__none">Genérico — todas las universidades</SelectItem>
+                <SelectItem value="__none">Genérico (todas las universidades)</SelectItem>
                 {meta.data?.universities.map((u) => (
                   <SelectItem key={u.id} value={u.id}>
                     {u.short_name}
@@ -242,8 +242,8 @@ export function ExerciseForm({ initial }: { initial?: ExerciseFormValues }) {
               </SelectContent>
             </Select>
             <p className="mt-1 text-xs text-muted-foreground">
-              Déjalo en "Genérico" si el ejercicio no es propio de un examen específico — se
-              mostrará a estudiantes de cualquier universidad.
+              Déjalo en "Genérico" si el ejercicio no es propio de un examen específico. Se mostrará
+              a estudiantes de cualquier universidad.
             </p>
           </div>
           <div>

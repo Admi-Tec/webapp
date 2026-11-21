@@ -272,9 +272,9 @@ function AdminExercisesList() {
                       {ex.topic?.name}
                       {ex.subtopic ? ` · ${ex.subtopic.name}` : ""}
                     </TableCell>
-                    <TableCell>{ex.university?.short_name ?? "—"}</TableCell>
+                    <TableCell>{ex.university?.short_name ?? "-"}</TableCell>
                     <TableCell className="capitalize">{ex.difficulty}</TableCell>
-                    <TableCell>{ex.exam_year ?? "—"}</TableCell>
+                    <TableCell>{ex.exam_year ?? "-"}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
                         <Button asChild size="icon" variant="ghost">

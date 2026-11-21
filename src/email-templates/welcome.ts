@@ -12,8 +12,10 @@ export function buildWelcomeEmail(data: { fullName: string | null }): {
   const html = renderTemplate(template, {
     greeting,
     panelUrl: absoluteUrl("/panel"),
-    instagramUrl: SOCIAL_LINKS.instagram,
-    whatsappUrl: SOCIAL_LINKS.whatsapp,
+    facebookUrl: escapeHtml(SOCIAL_LINKS.facebook),
+    instagramUrl: escapeHtml(SOCIAL_LINKS.instagram),
+    tiktokUrl: escapeHtml(SOCIAL_LINKS.tiktok),
+    whatsappUrl: escapeHtml(SOCIAL_LINKS.whatsapp),
   });
 
   return {

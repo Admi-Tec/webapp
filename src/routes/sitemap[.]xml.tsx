@@ -37,7 +37,6 @@ async function buildSitemap(): Promise<string> {
     { loc: absoluteUrl("/temas"), changefreq: "weekly", priority: "0.8" },
     { loc: absoluteUrl("/examenes"), changefreq: "weekly", priority: "0.8" },
     { loc: absoluteUrl("/examenes-oficiales"), changefreq: "weekly", priority: "0.6" },
-    { loc: absoluteUrl("/simulacros"), changefreq: "weekly", priority: "0.6" },
   ];
 
   for (const t of topics ?? []) {

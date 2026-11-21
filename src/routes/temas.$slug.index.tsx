@@ -1,4 +1,4 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, useRouterState } from "@tanstack/react-router";
 import {
   queryOptions,
   infiniteQueryOptions,
@@ -6,12 +6,23 @@ import {
   useSuspenseInfiniteQuery,
   useQuery,
 } from "@tanstack/react-query";
-import { zodValidator, fallback } from "@tanstack/zod-adapter";
-import { z } from "zod";
+import { zodValidator } from "@tanstack/zod-adapter";
 import { useServerFn } from "@tanstack/react-start";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { getTopicBySlug, listExercisesPage, getSubtopicFrequency } from "@/lib/exercises.functions";
+import {
+  getTopicBySlug,
+  listExercisesPage,
+  getSubtopicFrequency,
+  listUniversities,
+  createExercisePracticeBatch,
+} from "@/lib/exercises.functions";
+import {
+  exerciseListSearchSchema,
+  exerciseListFilters,
+  type ExerciseListSearch,
+} from "@/lib/exercise-practice";
+import { ExercisePracticeControls } from "@/components/exercise-practice-controls";
 import { getFullProfile } from "@/lib/profile.functions";
 import { getSubtopicPriorities } from "@/lib/recommendations.functions";
 import { useSignedIn } from "@/hooks/use-signed-in";
@@ -20,6 +31,7 @@ import { useInfiniteScrollTrigger } from "@/hooks/use-infinite-scroll-trigger";
 import { ExerciseCard } from "@/components/exercise-card";
 import { ExerciseCardSkeleton, LoadingNotice } from "@/components/skeletons";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -28,20 +40,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { InfoTooltip } from "@/components/info-tooltip";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { ChevronDown } from "lucide-react";
 import { pageMeta, absoluteUrl } from "@/lib/site";
 import { JsonLd } from "@/components/json-ld";
 
-const searchSchema = z.object({
-  difficulty: fallback(z.enum(["all", "facil", "medio", "dificil"]), "all").default("all"),
+const universitiesQO = queryOptions({
+  queryKey: ["universities"],
+  queryFn: () => listUniversities(),
 });
 
 const topicQO = (slug: string) =>
@@ -49,30 +53,29 @@ const topicQO = (slug: string) =>
 
 const EXERCISES_PAGE_SIZE = 20;
 
-// queryKey includes slug+difficulty, so changing either (e.g. clicking a
-// difficulty badge) is a brand-new infinite query as far as React Query is
-// concerned — pagination resets to page 0 for free, no manual reset needed.
-const exercisesQO = (slug: string, difficulty?: "facil" | "medio" | "dificil") =>
+const exercisesQO = (slug: string, search: ExerciseListSearch) =>
   infiniteQueryOptions({
-    queryKey: ["exercises", "topic", slug, difficulty ?? "all"],
+    queryKey: ["exercises", "topic", slug, search],
     queryFn: ({ pageParam }) =>
       listExercisesPage({
-        data: { topicSlug: slug, difficulty, page: pageParam, pageSize: EXERCISES_PAGE_SIZE },
+        data: {
+          ...exerciseListFilters(slug, search),
+          page: pageParam,
+          pageSize: EXERCISES_PAGE_SIZE,
+        },
       }),
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) => (lastPage.hasMore ? allPages.length : undefined),
   });
 
 export const Route = createFileRoute("/temas/$slug/")({
-  validateSearch: zodValidator(searchSchema),
-  loaderDeps: ({ search }) => ({ difficulty: search.difficulty }),
+  validateSearch: zodValidator(exerciseListSearchSchema),
+  loaderDeps: ({ search }) => search,
   loader: async ({ context, params, deps }) => {
-    // exercisesQO only needs params.slug/difficulty, not the resolved topic
-    // row — no reason to wait for `topic` before firing it.
-    const diff = deps.difficulty === "all" ? undefined : deps.difficulty;
     const [topic] = await Promise.all([
       context.queryClient.ensureQueryData(topicQO(params.slug)),
-      context.queryClient.ensureInfiniteQueryData(exercisesQO(params.slug, diff)),
+      context.queryClient.ensureInfiniteQueryData(exercisesQO(params.slug, deps)),
+      context.queryClient.ensureQueryData(universitiesQO),
     ]);
     if (!topic) throw notFound();
     return { topic };
@@ -112,47 +115,63 @@ function TopicPagePending() {
       <div className="h-3.5 w-24 animate-pulse rounded bg-muted motion-reduce:animate-none" />
       <div className="mt-3 h-9 w-64 animate-pulse rounded bg-muted motion-reduce:animate-none sm:h-10" />
       <div className="mt-5">
-        <LoadingNotice label="Cargando temas" />
+        <LoadingNotice label="Cargando ejercicios" />
       </div>
-      <div className="mt-5 grid gap-8 lg:grid-cols-[220px_1fr]">
-        <aside className="hidden space-y-2 lg:block">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-8 animate-pulse rounded-md bg-muted motion-reduce:animate-none"
-            />
-          ))}
-        </aside>
-        <section className="grid gap-3 sm:grid-cols-2">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <ExerciseCardSkeleton key={i} />
-          ))}
-        </section>
+      <div className="mt-5 h-28 animate-pulse rounded-md bg-muted motion-reduce:animate-none" />
+      <div className="mt-8 grid gap-3 sm:grid-cols-2">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <ExerciseCardSkeleton key={i} />
+        ))}
       </div>
     </div>
   );
 }
 
-const diffs = [
-  { v: "all", label: "Todos" },
-  { v: "facil", label: "Fácil" },
-  { v: "medio", label: "Medio" },
-  { v: "dificil", label: "Difícil" },
-] as const;
-
 function TopicPage() {
   const { slug } = Route.useParams();
   const search = Route.useSearch();
+  const navigate = Route.useNavigate();
+  const pending = useRouterState({ select: (state) => state.status === "pending" });
+  const { data: universities } = useSuspenseQuery(universitiesQO);
+  const createBatch = useServerFn(createExercisePracticeBatch);
+  const [starting, setStarting] = useState(false);
+  const startingRef = useRef(false);
   const { data: topic } = useSuspenseQuery(topicQO(slug));
   const {
     data: exercisePages,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useSuspenseInfiniteQuery(
-    exercisesQO(slug, search.difficulty === "all" ? undefined : search.difficulty),
-  );
+  } = useSuspenseInfiniteQuery(exercisesQO(slug, search));
   const exercises = exercisePages.pages.flatMap((p) => p.items);
+  const total = exercisePages.pages[0]?.total ?? 0;
+
+  async function startPractice() {
+    if (startingRef.current || pending || total === 0) return;
+    startingRef.current = true;
+    setStarting(true);
+    try {
+      const practice = await createBatch({ data: exerciseListFilters(slug, search) });
+      if (!practice.length) {
+        toast("No hay ejercicios con estos filtros");
+        return;
+      }
+      await navigate({
+        to: "/ejercicio/$id",
+        params: { id: practice[0] },
+        search: { ...search, practice, course: slug },
+      });
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "No se pudo preparar la práctica. Inténtalo de nuevo.",
+      );
+    } finally {
+      startingRef.current = false;
+      setStarting(false);
+    }
+  }
   const loadMoreRef = useInfiniteScrollTrigger<HTMLDivElement>(
     fetchNextPage,
     hasNextPage && !isFetchingNextPage,
@@ -170,7 +189,9 @@ function TopicPage() {
     .filter(Boolean);
 
   const [selectedUniversityId, setSelectedUniversityId] = useState<string>("");
-  const effectiveUniversityId = selectedUniversityId || targetUniversities[0]?.id || "";
+  const frequencyUniversity =
+    targetUniversities.find((u) => u.id === selectedUniversityId) ?? targetUniversities[0];
+  const effectiveUniversityId = frequencyUniversity?.id ?? "";
 
   const freqFn = useServerFn(getSubtopicFrequency);
   const freqQ = useQuery({
@@ -181,7 +202,9 @@ function TopicPage() {
 
   useEffect(() => {
     if (freqQ.isError) {
-      toast.error("No se pudo cargar la frecuencia por universidad. Mostrando orden por defecto.");
+      toast.error(
+        "No se pudo cargar la frecuencia por universidad. Puedes seguir usando los filtros.",
+      );
     }
   }, [freqQ.isError]);
 
@@ -195,7 +218,7 @@ function TopicPage() {
     enabled: isPremium,
   });
   const priorityIds = new Set(
-    Object.entries(priorityQ.data ?? {})
+    Object.entries(isPremium ? (priorityQ.data ?? {}) : {})
       .filter(([, v]) => v.isHighPriority)
       .map(([id]) => id),
   );
@@ -215,6 +238,9 @@ function TopicPage() {
       .slice(0, 3)
       .map((s) => s.id),
   );
+  const suggestedSubtopics = subtopicsRanked
+    .filter((s) => priorityIds.has(s.id) || topFrequentIds.has(s.id))
+    .sort((a, b) => Number(priorityIds.has(b.id)) - Number(priorityIds.has(a.id)));
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
@@ -246,287 +272,174 @@ function TopicPage() {
             <p className="mt-2 max-w-2xl text-muted-foreground">{topic.description}</p>
           )}
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger className="press inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
-            Practicar <ChevronDown className="h-4 w-4" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-64">
-            <DropdownMenuLabel>¿Qué quieres practicar?</DropdownMenuLabel>
-            <DropdownMenuItem asChild>
-              <Link to="/practica/$topicSlug" params={{ topicSlug: topic.slug }}>
-                Todo el curso
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuLabel className="font-normal text-muted-foreground">
-              Un tema en específico
-            </DropdownMenuLabel>
-            {subtopicsRanked.map((s) => (
-              <DropdownMenuItem key={s.id} asChild>
-                <Link
-                  to="/practica/$topicSlug"
-                  params={{ topicSlug: topic.slug }}
-                  search={{ subtopic: s.slug }}
-                >
-                  {topFrequentIds.has(s.id) && <span aria-hidden="true">🔥 </span>}
-                  {s.name}
-                  {priorityIds.has(s.id) && (
-                    <Badge
-                      variant="outline"
-                      className="ml-1.5 border-destructive/40 bg-destructive/10 px-1.5 py-0 text-[0.6rem] text-destructive"
-                    >
-                      Prioridad alta
-                    </Badge>
-                  )}
-                </Link>
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
       </header>
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-[220px_1fr]">
-        <aside className="min-w-0">
-          <div className="flex items-center gap-1.5">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Temas
-            </h2>
-            {hasTargetUniversity && (
+      {hasTargetUniversity ? (
+        <section className="mt-5 space-y-3" aria-labelledby="study-focus-heading">
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+            <div className="flex items-center gap-1.5">
+              <h2 id="study-focus-heading" className="text-sm font-normal">
+                Para enfocar tu estudio
+              </h2>
               <InfoTooltip>
-                Los temas están ordenados de mayor a menor frecuencia según los exámenes reales (con
-                año conocido) de los últimos 10 años en la universidad seleccionada. Los 3 más
-                frecuentes están marcados con 🔥, como sugerencia de en qué enfocar tu estudio.
+                Los temas más frecuentes en exámenes reales están marcados con 🔥. Prioridad alta
+                combina frecuencia y bajo rendimiento para tu universidad objetivo principal.
               </InfoTooltip>
+            </div>
+            {targetUniversities.length > 1 ? (
+              <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto">
+                <Label htmlFor="frequency-university" className="text-xs text-muted-foreground">
+                  Frecuencia en
+                </Label>
+                <Select value={effectiveUniversityId} onValueChange={setSelectedUniversityId}>
+                  <SelectTrigger
+                    id="frequency-university"
+                    className="min-h-11 w-auto max-w-full gap-3 text-sm font-normal lg:min-h-9"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {targetUniversities.map((u) => (
+                      <SelectItem key={u.id} value={u.id}>
+                        {u.short_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Frecuencia en {frequencyUniversity?.short_name}
+              </p>
             )}
           </div>
-
-          {hasTargetUniversity && targetUniversities.length > 1 && (
-            <Select value={effectiveUniversityId} onValueChange={setSelectedUniversityId}>
-              <SelectTrigger className="mt-3 w-full">
-                <SelectValue placeholder="Universidad" />
-              </SelectTrigger>
-              <SelectContent>
-                {targetUniversities.map((u) => (
-                  <SelectItem key={u.id} value={u.id}>
-                    Frecuencia para: {u.short_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {priorityIds.size > 0 && targetUniversities.length > 1 && (
+            <p className="text-xs text-muted-foreground">
+              Prioridad alta según tu rendimiento y tu universidad objetivo principal:{" "}
+              {targetUniversities[0]?.short_name}.
+            </p>
           )}
-
-          {/* Mobile/tablet: horizontal scrollable chips so subtopics never push
-              the exercise list below the fold. Desktop keeps the full vertical list.
-              Mirrors the desktop list's top-frequent styling so both breakpoints read
-              as one page. No edge-to-edge bleed here (unlike the admin nav scroller):
-              this lives inside a grid item (`aside`), which defaults to min-width:auto,
-              so a negative-margin child inflates the implicit column track and pushes
-              the whole page wider than the viewport instead of just visually bleeding. */}
-          <SubtopicChipScroller
-            subtopics={subtopicsRanked}
-            topicSlug={topic.slug}
-            topFrequentIds={topFrequentIds}
-            priorityIds={priorityIds}
-          />
-
-          <ul className="mt-3 hidden space-y-1 lg:block">
-            {subtopicsRanked.map((s) => {
-              const isTopFrequent = topFrequentIds.has(s.id);
-              return (
-                <li key={s.id}>
-                  <div
-                    className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm ${
-                      isTopFrequent
-                        ? "border border-primary/30 bg-primary/5"
-                        : "border border-transparent"
-                    }`}
-                  >
-                    <Link
-                      to="/temas/$slug/$subtopic"
-                      params={{ slug: topic.slug, subtopic: s.slug }}
-                      className="press flex-1 text-foreground/80 hover:text-foreground hover:underline"
+          {suggestedSubtopics.length > 0 ? (
+            <ul className="flex flex-wrap gap-2">
+              {suggestedSubtopics.map((s) => {
+                const isTopFrequent = topFrequentIds.has(s.id);
+                return (
+                  <li key={s.id}>
+                    <button
+                      type="button"
+                      aria-pressed={search.subtopic === s.slug}
+                      disabled={pending || starting}
+                      onClick={() => {
+                        void navigate({
+                          search: {
+                            ...search,
+                            subtopic: search.subtopic === s.slug ? "all" : s.slug,
+                          },
+                          replace: true,
+                        });
+                      }}
+                      className={`flex min-h-11 max-w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-md border px-3 py-2 text-left text-sm font-normal transition-colors hover:border-primary/50 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 lg:min-h-9 ${
+                        search.subtopic === s.slug
+                          ? "border-primary bg-primary/5 text-primary"
+                          : "border-border text-foreground"
+                      }`}
                     >
-                      {isTopFrequent && <span aria-hidden="true">🔥 </span>}
-                      {s.name}
-                    </Link>
-                    {priorityIds.has(s.id) && (
-                      <Badge
-                        variant="outline"
-                        className="shrink-0 border-destructive/40 bg-destructive/10 px-1.5 py-0 text-[0.6rem] text-destructive"
-                      >
-                        Prioridad alta
-                      </Badge>
-                    )}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-
-          {!hasTargetUniversity && (
-            <p className="mt-4 rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
-              Agrega tu universidad objetivo en{" "}
-              <Link to="/perfil" className="text-primary hover:underline">
-                tu perfil
-              </Link>{" "}
-              para ver qué tan frecuente es cada tema en sus exámenes reales.
+                      {isTopFrequent && (
+                        <>
+                          <span aria-hidden="true">🔥</span>
+                          <span className="sr-only">
+                            Frecuente en {frequencyUniversity?.short_name}:{" "}
+                          </span>
+                        </>
+                      )}
+                      <span>{s.name}</span>
+                      {priorityIds.has(s.id) && (
+                        <Badge
+                          variant="outline"
+                          className="border-destructive/40 bg-destructive/10 px-1.5 py-0 text-xs text-destructive"
+                        >
+                          Prioridad alta
+                        </Badge>
+                      )}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground" role="status">
+              {freqQ.isPending
+                ? "Consultando temas frecuentes…"
+                : freqQ.isError
+                  ? "La frecuencia no está disponible. Puedes elegir cualquier tema con los filtros."
+                  : "Aún no hay datos de frecuencia para esta universidad."}
             </p>
           )}
-        </aside>
+        </section>
+      ) : signedIn === false || (signedIn === true && profileQ.isSuccess) ? (
+        <p className="mt-4 text-sm text-muted-foreground">
+          Agrega tu universidad objetivo en{" "}
+          <Link to="/perfil" className="text-primary hover:underline">
+            tu perfil
+          </Link>{" "}
+          para descubrir los temas más frecuentes en sus exámenes reales.
+        </p>
+      ) : null}
 
-        <section className="min-w-0">
-          <div className="mb-4 flex flex-wrap items-center gap-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Dificultad:
-            </span>
-            {diffs.map((d) => (
-              <Link
-                key={d.v}
-                from={Route.fullPath}
-                to="."
-                search={(prev: { difficulty: "all" | "facil" | "medio" | "dificil" }) => ({
-                  ...prev,
-                  difficulty: d.v,
-                })}
-                className="rounded-full"
-              >
-                <Badge
-                  variant={search.difficulty === d.v ? "default" : "outline"}
-                  className="cursor-pointer"
+      <ExercisePracticeControls
+        filters={search}
+        topics={topic.subtopics}
+        universities={universities}
+        total={total}
+        pending={pending}
+        starting={starting}
+        onChange={(filters) => {
+          void navigate({ search: filters, replace: true });
+        }}
+        onStart={startPractice}
+      />
+
+      <section className="mt-8 min-w-0" aria-label="Ejercicios disponibles" aria-busy={pending}>
+        <p className="mb-4 text-sm text-muted-foreground" role="status">
+          {total} {total === 1 ? "ejercicio disponible" : "ejercicios disponibles"}
+        </p>
+        {exercises.length === 0 ? (
+          <p className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+            No hay ejercicios con estos filtros
+          </p>
+        ) : (
+          <>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {exercises.map((ex, i) => (
+                <div
+                  key={ex.id}
+                  className="animate-fade-up"
+                  style={{ "--i": Math.min(i, 10) } as React.CSSProperties}
                 >
-                  {d.label}
-                </Badge>
-              </Link>
-            ))}
-          </div>
-          {exercises.length === 0 ? (
-            <p className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-              No hay ejercicios con esos filtros.
-            </p>
-          ) : (
-            <>
-              <div className="grid gap-3 sm:grid-cols-2">
-                {exercises.map((ex, i) => (
-                  <div
-                    key={ex.id}
-                    className="animate-fade-up"
-                    style={{ "--i": Math.min(i, 10) } as React.CSSProperties}
-                  >
-                    <ExerciseCard ex={ex} />
-                  </div>
-                ))}
-                {isFetchingNextPage && (
-                  <>
-                    <ExerciseCardSkeleton />
-                    <ExerciseCardSkeleton />
-                  </>
-                )}
-              </div>
-              {/* Sentinel: invisible, sits right after the grid. The
+                  <ExerciseCard ex={ex} />
+                </div>
+              ))}
+              {isFetchingNextPage && (
+                <>
+                  <ExerciseCardSkeleton />
+                  <ExerciseCardSkeleton />
+                </>
+              )}
+            </div>
+            {/* Sentinel: invisible, sits right after the grid. The
                   IntersectionObserver fires fetchNextPage ~400px before this
                   actually scrolls into view (see useInfiniteScrollTrigger),
                   and only while there's more to fetch and nothing's already
                   in flight — no separate isLoading state to hand-manage. */}
-              {hasNextPage && <div ref={loadMoreRef} aria-hidden="true" className="h-1" />}
-              {!hasNextPage && !isFetchingNextPage && (
-                <p className="mt-6 text-center text-xs text-muted-foreground">
-                  No hay más preguntas.
-                </p>
-              )}
-            </>
-          )}
-        </section>
-      </div>
-    </div>
-  );
-}
-
-type ScrollableSubtopic = { id: string; slug: string; name: string };
-
-// Mobile subtopic chip row. Native overflow-x scrollbars read as broken chrome on a
-// chip list, so it's hidden (`.no-scrollbar`) in favor of edge-fade overlays that
-// only appear on the side there's actually more to scroll toward — tracked via
-// scrollLeft/scrollWidth rather than shown unconditionally, so a short list that
-// doesn't overflow never shows a fade with nothing behind it. Scroll-snap gives the
-// swipe a tactile "settle" per chip instead of free-floating, and each chip reuses
-// the app's list-rhythm stagger (`animate-fade-up` + `--i`) for its entrance.
-function SubtopicChipScroller({
-  subtopics,
-  topicSlug,
-  topFrequentIds,
-  priorityIds,
-}: {
-  subtopics: ScrollableSubtopic[];
-  topicSlug: string;
-  topFrequentIds: Set<string>;
-  priorityIds: Set<string>;
-}) {
-  const scrollerRef = useRef<HTMLDivElement>(null);
-  const [fade, setFade] = useState({ left: false, right: false });
-
-  const updateFade = useCallback(() => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    const overflowing = el.scrollWidth > el.clientWidth + 1;
-    setFade({
-      left: overflowing && el.scrollLeft > 4,
-      right: overflowing && el.scrollLeft < el.scrollWidth - el.clientWidth - 4,
-    });
-  }, []);
-
-  useEffect(() => {
-    updateFade();
-    window.addEventListener("resize", updateFade);
-    return () => window.removeEventListener("resize", updateFade);
-  }, [updateFade, subtopics.length]);
-
-  return (
-    <div className="relative mt-3 lg:hidden">
-      <div
-        ref={scrollerRef}
-        onScroll={updateFade}
-        className="no-scrollbar flex snap-x snap-mandatory gap-2 overflow-x-auto scroll-smooth"
-      >
-        {subtopics.map((s, i) => {
-          const isTopFrequent = topFrequentIds.has(s.id);
-          return (
-            <Link
-              key={s.id}
-              to="/temas/$slug/$subtopic"
-              params={{ slug: topicSlug, subtopic: s.slug }}
-              className={`press animate-fade-up shrink-0 snap-start whitespace-nowrap rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
-                isTopFrequent
-                  ? "border-primary/30 bg-primary/5 text-foreground"
-                  : "border-border text-foreground/80 hover:border-primary/30 hover:text-foreground"
-              }`}
-              style={{ "--i": Math.min(i, 10) } as React.CSSProperties}
-            >
-              {isTopFrequent && <span aria-hidden="true">🔥 </span>}
-              {s.name}
-              {priorityIds.has(s.id) && (
-                <Badge
-                  variant="outline"
-                  className="ml-1.5 border-destructive/40 bg-destructive/10 px-1.5 py-0 text-[0.6rem] text-destructive"
-                >
-                  Prioridad alta
-                </Badge>
-              )}
-            </Link>
-          );
-        })}
-      </div>
-      <div
-        aria-hidden="true"
-        className={`pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-background to-transparent transition-opacity duration-200 ${
-          fade.left ? "opacity-100" : "opacity-0"
-        }`}
-      />
-      <div
-        aria-hidden="true"
-        className={`pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-background to-transparent transition-opacity duration-200 ${
-          fade.right ? "opacity-100" : "opacity-0"
-        }`}
-      />
+            {hasNextPage && <div ref={loadMoreRef} aria-hidden="true" className="h-1" />}
+            {!hasNextPage && !isFetchingNextPage && (
+              <p className="mt-6 text-center text-xs text-muted-foreground">
+                No hay más preguntas.
+              </p>
+            )}
+          </>
+        )}
+      </section>
     </div>
   );
 }

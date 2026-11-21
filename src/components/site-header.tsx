@@ -35,7 +35,6 @@ import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/s
 const publicNav = [
   { to: "/temas", label: "Cursos" },
   { to: "/examenes", label: "Exámenes" },
-  { to: "/simulacros", label: "Simulacros" },
   { to: "/planes", label: "Planes" },
 ];
 
@@ -86,7 +85,7 @@ export function SiteHeader() {
     // landing-only.
     <header className="sticky top-0 z-40 border-b border-border bg-background">
       <div className="mx-auto grid max-w-6xl grid-cols-[auto_1fr_auto] items-center gap-3 px-4 py-3 sm:gap-6">
-        <Link to="/" className="flex items-center gap-2 shrink-0" aria-label="Admi-Tec — inicio">
+        <Link to="/" className="flex items-center gap-2 shrink-0" aria-label="Admi-Tec, inicio">
           <img src="/brand/icon.svg" alt="" aria-hidden className="h-9 w-9" />
           <span className="font-display text-xl font-bold tracking-tight">
             Admi<span className="text-accent">-</span>Tec

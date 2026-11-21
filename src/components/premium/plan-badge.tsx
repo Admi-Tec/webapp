@@ -21,8 +21,8 @@ export function PlanBadge({ className }: { className?: string }) {
       )}
       aria-label={
         status.onTrial
-          ? `Premium de prueba, ${status.trialDaysLeft} días restantes — ver planes`
-          : "Premium activo — ver planes"
+          ? `Premium de prueba, ${status.trialDaysLeft} días restantes. Ver planes`
+          : "Premium activo. Ver planes"
       }
     >
       <Sparkles className="h-3.5 w-3.5" aria-hidden />

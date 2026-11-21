@@ -436,7 +436,7 @@ function PerfilPage() {
                       />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="__none">— ninguna —</SelectItem>
+                      <SelectItem value="__none">Ninguna</SelectItem>
                       {rowCareers.map((c) => (
                         <SelectItem key={c.id} value={c.id}>
                           {c.name}

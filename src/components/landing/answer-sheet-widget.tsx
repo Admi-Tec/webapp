@@ -282,7 +282,7 @@ export function AnswerSheetWidget() {
             Aciertos de hoy
           </p>
           <p className="font-data mt-0.5 text-2xl font-bold tabular-nums text-foreground">
-            {accuracy ?? "—"}
+            {accuracy ?? "-"}
             {accuracy !== null && <span className="text-base text-muted-foreground">%</span>}
           </p>
         </div>

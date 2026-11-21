@@ -97,7 +97,7 @@ export const Route = createFileRoute("/")({
   head: () => {
     const base = pageMeta({
       path: "/",
-      title: `${SITE_NAME} — Exámenes oficiales, simulacros y ranking`,
+      title: `${SITE_NAME} - Exámenes oficiales, simulacros y ranking`,
       description: SITE_DESCRIPTION,
       rawTitle: true,
     });
@@ -275,11 +275,11 @@ function Index() {
   const FAQ_ITEMS = [
     {
       q: "¿Es realmente gratis crear una cuenta?",
-      a: "Sí. Registrarte y usar el plan gratuito no cuesta nada, para siempre — sin tarjeta, sin trucos. Premium es opcional, para cuando quieras exámenes oficiales completos, simulacros por universidad y el ranking completo.",
+      a: "Sí. Puedes registrarte y usar el plan gratuito para siempre, sin tarjeta ni trucos. Premium es opcional, para cuando quieras exámenes oficiales completos, simulacros por universidad y el ranking completo.",
     },
     {
       q: "¿Los ejercicios y exámenes son reales, o inventados como en otras apps?",
-      a: "Todos los exámenes oficiales son de años anteriores, tal cual se tomaron — no ejercicios genéricos. Los simulacros se corrigen con el mismo sistema de puntos (positivo y negativo) del examen real.",
+      a: "Todos los exámenes oficiales son de años anteriores, tal cual se tomaron, con las preguntas originales. Los simulacros se corrigen con el mismo sistema de puntos (positivo y negativo) del examen real.",
     },
     {
       q: "¿Para qué universidades sirve Admi-Tec?",
@@ -289,7 +289,7 @@ function Index() {
     },
     {
       q: "¿Otros van a ver mi nombre real en el ranking?",
-      a: "No. El ranking es pseudónimo — eliges un apodo, y nadie ve tu nombre real, ni siquiera en tu propia posición dentro del ranking.",
+      a: "No. En el ranking usas un apodo y nadie ve tu nombre real, ni siquiera en tu propia posición dentro del ranking.",
     },
     {
       q: "¿Qué diferencia hay entre el plan gratuito y Premium?",
@@ -398,7 +398,7 @@ function Index() {
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="press cta-overshoot min-h-11">
-                <Link to="/examenes">Ver exámenes oficiales</Link>
+                <Link to="/examenes">Ver exámenes</Link>
               </Button>
             </div>
             <div className="animate-fade-up" style={{ "--i": 14 } as React.CSSProperties}>

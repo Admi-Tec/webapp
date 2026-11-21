@@ -205,7 +205,7 @@ function OnboardingPage() {
         </button>
       </div>
       <p className="mt-1 text-sm text-muted-foreground">
-        5 preguntas rápidas — con esto armamos tu plan de estudio y tu cuenta regresiva. No hay
+        Responde 5 preguntas rápidas para armar tu plan de estudio y tu cuenta regresiva. No hay
         respuestas incorrectas.
       </p>
 
@@ -374,8 +374,8 @@ function OnboardingPage() {
           <div>
             <h2 className="font-display text-lg font-bold">¿A qué carrera te gustaría postular?</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Opcional — puedes cambiarlo después desde tu perfil. Cada universidad tiene sus
-              propias carreras, así que elige una por cada una.
+              Opcional. Puedes cambiarlo después desde tu perfil. Cada universidad tiene sus propias
+              carreras, así que elige una por cada una.
             </p>
             <div className="mt-4 space-y-4">
               {universities.map((row, i) => {
@@ -405,7 +405,7 @@ function OnboardingPage() {
                         />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="__none">— ninguna —</SelectItem>
+                        <SelectItem value="__none">Ninguna</SelectItem>
                         {rowCareers.map((c) => (
                           <SelectItem key={c.id} value={c.id}>
                             {c.name}

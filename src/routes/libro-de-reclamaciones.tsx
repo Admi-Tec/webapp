@@ -139,7 +139,7 @@ function ComplaintsBookPage() {
         </div>
         {/* Razón social y RUC del proveedor: completar el RUC cuando exista. */}
         <p className="mt-4 rounded-md border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
-          Proveedor: <strong className="text-foreground">{SITE_NAME}</strong> — plataforma de
+          Proveedor: <strong className="text-foreground">{SITE_NAME}</strong>, plataforma de
           preparación preuniversitaria. Conforme al D.S. N.º 011-2011-PCM, tienes derecho a
           registrar aquí tu reclamo o queja.
         </p>

@@ -250,7 +250,7 @@ function UniversidadesPage() {
                 <Label>Fecha del examen de admisión</Label>
                 <Input type="date" value={examDate} onChange={(e) => setExamDate(e.target.value)} />
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Opcional — si ya se conoce, se usa como valor por defecto de la cuenta regresiva.
+                  Opcional. Si ya se conoce, se usa como valor por defecto de la cuenta regresiva.
                 </p>
               </div>
               <ImageUpload
@@ -354,7 +354,7 @@ function UniversidadesPage() {
                       disabled={hasReferences(u)}
                       title={
                         hasReferences(u)
-                          ? "Tiene referencias asociadas — desactívala en su lugar"
+                          ? "Tiene referencias asociadas. Desactívala en su lugar"
                           : undefined
                       }
                     >
@@ -401,7 +401,7 @@ function UniversityLogo({ path }: { path: string | null }) {
     />
   ) : (
     <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md border border-dashed border-border text-[10px] text-muted-foreground">
-      —
+      -
     </span>
   );
 }

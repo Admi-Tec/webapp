@@ -10,6 +10,8 @@ import { JsonLd } from "@/components/json-ld";
 import { PremiumLockChip } from "@/components/premium/premium-gate";
 import { ComingSoonChip } from "@/components/coming-soon-chip";
 import { usePlan } from "@/hooks/use-plan";
+import { SimulacroCatalog } from "@/components/simulacro-catalog";
+import { publishedTemplatesQO } from "@/lib/exam-catalog";
 
 const uniQO = (slug: string) =>
   queryOptions({
@@ -31,6 +33,7 @@ export const Route = createFileRoute("/examenes/$slug/")({
     const [u] = await Promise.all([
       context.queryClient.ensureQueryData(uniQO(params.slug)),
       context.queryClient.ensureQueryData(examsQO(params.slug)),
+      context.queryClient.ensureQueryData(publishedTemplatesQO),
     ]);
     if (!u) throw notFound();
     return { university: u };
@@ -126,16 +129,32 @@ function UniPage() {
         {u.description && <p className="mt-2 max-w-2xl text-muted-foreground">{u.description}</p>}
       </div>
 
-      <div className="mt-10">
+      <nav aria-label="Tipos de examen" className="mt-6 flex flex-wrap gap-4 text-sm text-primary">
+        <Link to="/examenes/$slug" params={{ slug }} hash="simulacros" className="hover:underline">
+          Simulacros
+        </Link>
+        <Link to="/examenes/$slug" params={{ slug }} hash="oficiales" className="hover:underline">
+          Exámenes oficiales
+        </Link>
+      </nav>
+
+      <SimulacroCatalog universitySlug={slug} />
+
+      <section
+        id="oficiales"
+        className="mt-10 scroll-mt-24"
+        aria-labelledby="official-exams-heading"
+      >
         <div className="flex items-center justify-between gap-4">
-          <h2 className="font-display text-xl font-bold">Exámenes oficiales</h2>
+          <h2 id="official-exams-heading" className="font-display text-xl font-bold">
+            Exámenes oficiales
+          </h2>
           <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-muted-foreground">
             {(exams ?? []).length} exámenes
           </span>
         </div>
         <p className="mt-2 text-sm text-muted-foreground">
-          Exámenes con preguntas fijas definidas por el equipo. Puedes rendir cada examen las veces
-          que quieras.
+          Rinde exámenes de admisión de años anteriores con sus preguntas originales.
         </p>
 
         <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -184,7 +203,7 @@ function UniPage() {
             })
           )}
         </div>
-      </div>
+      </section>
     </div>
   );
 }

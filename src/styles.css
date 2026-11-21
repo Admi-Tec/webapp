@@ -718,6 +718,35 @@ html {
   transform: scale(0.97);
 }
 
+/* A short invitation to start practice. Touch and reduced-motion stay static. */
+@media (min-width: 64rem) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .practice-start-ready .practice-start-cue {
+    animation: practice-start-invite 2.8s cubic-bezier(0.16, 1, 0.3, 1) 700ms 1;
+  }
+
+  .practice-start-ready .practice-start-arrow {
+    transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .practice-start-ready:is(:hover, :focus-visible) .practice-start-arrow {
+    transform: translateX(3px);
+  }
+}
+
+@keyframes practice-start-invite {
+  0%,
+  30%,
+  50%,
+  80%,
+  100% {
+    transform: translateX(0);
+  }
+  15%,
+  65% {
+    transform: translateX(4px);
+  }
+}
+
 /* FAQ del landing (index.tsx): Radix/tw-animate-css traen de fábrica una
    animación de alto en AccordionContent (height 0 → alto real) al abrir o
    cerrar. Con pregunta+respuesta compartiendo un solo recuadro con borde,

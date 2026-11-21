@@ -96,7 +96,7 @@ function SimulacroPreview() {
             Reintentar
           </Button>
           <Button asChild variant="outline" className="press">
-            <Link to="/simulacros">Volver</Link>
+            <Link to="/examenes">Volver a exámenes</Link>
           </Button>
         </div>
       </div>
@@ -106,8 +106,8 @@ function SimulacroPreview() {
     return (
       <div className="mx-auto max-w-3xl px-4 py-16 text-center">
         <p>Este simulacro no está disponible.</p>
-        <Link to="/simulacros" className="mt-4 inline-block text-primary hover:underline">
-          Volver
+        <Link to="/examenes" className="mt-4 inline-block text-primary hover:underline">
+          Volver a exámenes
         </Link>
       </div>
     );
@@ -124,10 +124,23 @@ function SimulacroPreview() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
-      <nav className="text-xs text-muted-foreground">
-        <Link to="/simulacros" className="hover:underline">
-          Simulacros
+      <nav className="text-xs text-muted-foreground" aria-label="Migas">
+        <Link to="/examenes" className="hover:underline">
+          Exámenes
         </Link>{" "}
+        {t.university && (
+          <>
+            /{" "}
+            <Link
+              to="/examenes/$slug"
+              params={{ slug: t.university.slug }}
+              hash="simulacros"
+              className="hover:underline"
+            >
+              {t.university.short_name}
+            </Link>{" "}
+          </>
+        )}
         / <span className="text-foreground">{t.title}</span>
       </nav>
       <h1 className="mt-3 font-display text-3xl font-bold">{t.title}</h1>
@@ -159,7 +172,7 @@ function SimulacroPreview() {
           </li>
           <li className="flex items-start gap-2">
             <Shuffle className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-            Las preguntas se eligen al azar según el banco de cada curso — si repites el simulacro,
+            Las preguntas se eligen al azar según el banco de cada curso. Si repites el simulacro,
             obtendrás una combinación distinta.
           </li>
           <li className="flex items-start gap-2">

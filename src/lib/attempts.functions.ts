@@ -151,7 +151,7 @@ export const getUserStats = createServerFn({ method: "GET" })
       createdAt: r.created_at,
       exerciseId: r.exercise?.id ?? null,
       statement: (r.exercise?.statement_md ?? "").slice(0, 120),
-      topicName: r.exercise?.topic?.name ?? "—",
+      topicName: r.exercise?.topic?.name ?? "-",
     }));
 
     return { total, correct, accuracy, streak, topicStats, recent };

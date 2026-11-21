@@ -3,6 +3,8 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { z } from "zod";
 import { EXERCISE_IMAGES_BUCKET } from "@/lib/storage";
+import { exerciseFiltersSchema, sampleExercisePositions } from "@/lib/exercise-practice";
+import { filteredExercisesQuery } from "@/lib/exercise-query";
 
 function publicClient() {
   return createClient<Database>(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
@@ -141,11 +143,7 @@ export const listExercises = createServerFn({ method: "GET" })
     return result;
   });
 
-const exercisesPageInput = z.object({
-  topicSlug: z.string().optional(),
-  subtopicSlug: z.string().optional(),
-  difficulty: z.enum(["facil", "medio", "dificil"]).optional(),
-  year: z.number().int().optional(),
+const exercisesPageInput = exerciseFiltersSchema.extend({
   page: z.number().int().min(0).default(0),
   pageSize: z.number().int().min(1).max(50).default(20),
 });
@@ -161,28 +159,36 @@ export const listExercisesPage = createServerFn({ method: "GET" })
   .inputValidator((d) => exercisesPageInput.parse(d))
   .handler(async ({ data }) => {
     const sb = publicClient();
-    const subtopicEmbed = data.subtopicSlug ? "subtopics!inner(slug,name)" : "subtopics(slug,name)";
     const from = data.page * data.pageSize;
     const to = from + data.pageSize - 1;
-    let q = sb
-      .from("exercises")
-      .select(
-        `id, statement_md, statement_image_path, difficulty, exam_year, tags, choices, correct_choice, topic:topics!inner(slug,name), subtopic:${subtopicEmbed}, university:universities(slug,short_name)`,
-      )
+    const { data: rows, error, count } = await filteredExercisesQuery(sb, data)
       .order("created_at", { ascending: false })
+      .order("id")
       .range(from, to);
-    if (data.topicSlug) q = q.eq("topics.slug", data.topicSlug);
-    if (data.subtopicSlug) q = q.eq("subtopics.slug", data.subtopicSlug);
-    if (data.difficulty) q = q.eq("difficulty", data.difficulty);
-    if (data.year) q = q.eq("exam_year", data.year);
-    const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
     const items = rows ?? [];
-    // Cheap end-of-list heuristic (no separate COUNT query): a page shorter
-    // than pageSize can only happen at the end. A page that happens to land
-    // exactly on a multiple of pageSize costs one extra empty fetch — it
-    // self-corrects immediately, cheaper than a COUNT on every page.
-    return { items, hasMore: items.length === data.pageSize };
+    const total = count ?? 0;
+    return { items, total, hasMore: from + items.length < total };
+  });
+
+export const createExercisePracticeBatch = createServerFn({ method: "POST" })
+  .inputValidator((d) => exerciseFiltersSchema.parse(d))
+  .handler(async ({ data }) => {
+    const sb = publicClient();
+    const { count, error } = await filteredExercisesQuery(sb, data, true);
+    if (error) throw new Error(error.message);
+    const positions = sampleExercisePositions(count ?? 0);
+    const rows = await Promise.all(
+      positions.map(async (position) => {
+        const { data: exercises, error } = await filteredExercisesQuery(sb, data)
+          .order("created_at", { ascending: false })
+          .order("id")
+          .range(position, position);
+        if (error) throw new Error(error.message);
+        return exercises?.[0]?.id;
+      }),
+    );
+    return [...new Set(rows.filter((id): id is string => !!id))];
   });
 
 export const getExercise = createServerFn({ method: "GET" })

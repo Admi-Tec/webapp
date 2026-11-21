@@ -1,5 +1,6 @@
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
-import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { queryOptions, useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { zodValidator } from "@tanstack/zod-adapter";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { getExercise, listExercises } from "@/lib/exercises.functions";
@@ -17,6 +18,7 @@ import { ZoomableImage } from "@/components/zoomable-image";
 import { ExercisePagePending } from "@/components/skeletons";
 import { pageMeta, absoluteUrl } from "@/lib/site";
 import { JsonLd } from "@/components/json-ld";
+import { exercisePracticeSearchSchema } from "@/lib/exercise-practice";
 
 const exQO = (id: string) =>
   queryOptions({ queryKey: ["exercise", id], queryFn: () => getExercise({ data: { id } }) });
@@ -24,6 +26,7 @@ const exQO = (id: string) =>
 const difficultyLabel = { facil: "Fácil", medio: "Medio", dificil: "Difícil" } as const;
 
 export const Route = createFileRoute("/ejercicio/$id")({
+  validateSearch: zodValidator(exercisePracticeSearchSchema),
   loader: async ({ context, params }) => {
     const ex = await context.queryClient.ensureQueryData(exQO(params.id));
     if (!ex) throw notFound();
@@ -40,10 +43,10 @@ export const Route = createFileRoute("/ejercicio/$id")({
     const subtopicName = ex?.subtopic?.name ?? topicName;
     const uniName = ex?.university?.short_name;
     const title = subtopicName
-      ? `Ejercicio de ${subtopicName}${uniName ? ` — ${uniName}` : ""}`
+      ? `Ejercicio de ${subtopicName}${uniName ? ` - ${uniName}` : ""}`
       : "Ejercicio de práctica";
     const description = subtopicName
-      ? `Ejercicio de ${subtopicName}${topicName && topicName !== subtopicName ? ` (${topicName})` : ""}${uniName ? ` — ${uniName}` : ""} resuelto paso a paso${ex?.difficulty ? `. Dificultad: ${difficultyLabel[ex.difficulty]}` : ""}.`
+      ? `Ejercicio de ${subtopicName}${topicName && topicName !== subtopicName ? ` (${topicName})` : ""}${uniName ? ` - ${uniName}` : ""} resuelto paso a paso${ex?.difficulty ? `. Dificultad: ${difficultyLabel[ex.difficulty]}` : ""}.`
       : "Ejercicio resuelto paso a paso para tu examen de admisión.";
     return pageMeta({ path: `/ejercicio/${params.id}`, title, description });
   },
@@ -66,6 +69,12 @@ export const Route = createFileRoute("/ejercicio/$id")({
 
 function ExercisePage() {
   const { id } = Route.useParams();
+  return <ExerciseDetail key={id} id={id} />;
+}
+
+function ExerciseDetail({ id }: { id: string }) {
+  const search = Route.useSearch();
+  const practice = search.practice?.includes(id) ? search.practice : undefined;
   const navigate = useNavigate();
   const { data: ex } = useSuspenseQuery(exQO(id));
   const record = useServerFn(recordAttempt);
@@ -75,14 +84,15 @@ function ExercisePage() {
     null,
   );
   const [startedAt, setStartedAt] = useState(() => Date.now());
-  const [siblings, setSiblings] = useState<string[]>([]);
   const [imgUrl, setImgUrl] = useState<string | null>(null);
-
-  // Reset on id change
-  useEffect(() => {
-    setSelected(null);
-    setSubmitted(null);
-  }, [id]);
+  const { data: siblings = [] } = useQuery({
+    queryKey: ["exercise-siblings", ex?.topic?.slug],
+    queryFn: async () => {
+      const rows = await listExercises({ data: { topicSlug: ex!.topic!.slug, limit: 100 } });
+      return rows.map((row) => row.id);
+    },
+    enabled: !practice && !!ex?.topic?.slug,
+  });
 
   useEffect(() => {
     let alive = true;
@@ -96,14 +106,6 @@ function ExercisePage() {
       alive = false;
     };
   }, [ex?.statement_image_path]);
-
-  // Load sibling exercise ids in same topic for prev/next
-  useEffect(() => {
-    if (!ex?.topic?.slug) return;
-    listExercises({ data: { topicSlug: ex.topic.slug, limit: 100 } }).then((rows) => {
-      setSiblings(rows.map((r) => r.id));
-    });
-  }, [ex?.topic?.slug]);
 
   if (!ex) return null;
 
@@ -137,9 +139,16 @@ function ExercisePage() {
     }
   }
 
-  const curIdx = siblings.indexOf(id);
-  const prevId = curIdx > 0 ? siblings[curIdx - 1] : null;
-  const nextId = curIdx >= 0 && curIdx < siblings.length - 1 ? siblings[curIdx + 1] : null;
+  const exerciseIds = practice ?? siblings;
+  const curIdx = exerciseIds.indexOf(id);
+  const prevId = curIdx > 0 ? exerciseIds[curIdx - 1] : null;
+  const nextId = curIdx >= 0 && curIdx < exerciseIds.length - 1 ? exerciseIds[curIdx + 1] : null;
+  const course = (practice && search.course) || ex.topic?.slug;
+  const listSearch = {
+    subtopic: search.subtopic,
+    difficulty: search.difficulty,
+    university: search.university,
+  };
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
@@ -180,12 +189,36 @@ function ExercisePage() {
               Cursos
             </Link>{" "}
             /{" "}
-            <Link to="/temas/$slug" params={{ slug: ex.topic.slug }} className="hover:underline">
+            <Link
+              to="/temas/$slug"
+              params={{ slug: course ?? ex.topic.slug }}
+              search={listSearch}
+              className="hover:underline"
+            >
               {ex.topic.name}
             </Link>
           </>
         )}
       </nav>
+
+      {practice && (
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-y border-border py-3">
+          {course && (
+            <Link
+              to="/temas/$slug"
+              params={{ slug: course }}
+              search={listSearch}
+              className="inline-flex min-h-11 items-center text-sm text-primary hover:underline"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" aria-hidden />
+              Volver al listado
+            </Link>
+          )}
+          <p className="text-sm font-medium tabular-nums" role="status" aria-label="Avance de la práctica">
+            {curIdx + 1} de {practice.length}
+          </p>
+        </div>
+      )}
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <Badge variant="outline">{difficultyLabel[ex.difficulty]}</Badge>
@@ -204,7 +237,7 @@ function ExercisePage() {
       >
         <h1 className="sr-only">
           Ejercicio de {ex.topic?.name ?? "práctica"}
-          {ex.university ? ` — ${ex.university.short_name}` : ""}
+          {ex.university ? ` - ${ex.university.short_name}` : ""}
         </h1>
         <div className="text-base">
           <MathText text={ex.statement_md} />
@@ -303,7 +336,7 @@ function ExercisePage() {
         <Button
           variant="outline"
           disabled={!prevId}
-          onClick={() => prevId && navigate({ to: "/ejercicio/$id", params: { id: prevId } })}
+          onClick={() => prevId && navigate({ to: "/ejercicio/$id", params: { id: prevId }, search: practice ? search : {} })}
           className="press min-h-11"
         >
           <ArrowLeft className="mr-2 h-4 w-4" /> Anterior
@@ -319,13 +352,21 @@ function ExercisePage() {
         >
           Reintentar
         </Button>
-        <Button
-          disabled={!nextId}
-          onClick={() => nextId && navigate({ to: "/ejercicio/$id", params: { id: nextId } })}
-          className="press min-h-11"
-        >
-          Siguiente <ArrowRight className="ml-2 h-4 w-4" />
-        </Button>
+        {practice && !nextId && course ? (
+          <Button asChild className="press min-h-11">
+            <Link to="/temas/$slug" params={{ slug: course }} search={listSearch}>
+              Volver al listado <ArrowRight className="ml-2 h-4 w-4" aria-hidden />
+            </Link>
+          </Button>
+        ) : (
+          <Button
+            disabled={!nextId}
+            onClick={() => nextId && navigate({ to: "/ejercicio/$id", params: { id: nextId }, search: practice ? search : {} })}
+            className="press min-h-11"
+          >
+            Siguiente <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        )}
       </div>
     </div>
   );

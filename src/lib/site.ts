@@ -13,12 +13,14 @@ export const SITE_NAME = "Admi-Tec";
 // botón "Suscribirme" antes de integrar la pasarela de pago). Configura
 // VITE_CONTACT_EMAIL en .env con el correo real cuando exista.
 export const CONTACT_EMAIL = import.meta.env.VITE_CONTACT_EMAIL || "contact@admi-tec.com";
-// Redes sociales y WhatsApp de contacto. Igual que CONTACT_EMAIL: valores
-// placeholder hasta que existan las cuentas reales — configura las VITE_* en
-// .env y en el entorno de deploy y todo el sitio las toma automáticamente.
+// Redes sociales y WhatsApp de contacto. Las VITE_* permiten actualizar los
+// enlaces desde .env o el entorno de deploy; los valores por defecto son las
+// cuentas de Admi-Tec.
 export const SOCIAL_LINKS = {
+  facebook:
+    import.meta.env.VITE_FACEBOOK_URL || "https://www.facebook.com/people/Admi-tec/61593128098785/",
   instagram: import.meta.env.VITE_INSTAGRAM_URL || "https://instagram.com/admi.tec",
-  tiktok: import.meta.env.VITE_TIKTOK_URL || "https://tiktok.com/@admitec.pe",
+  tiktok: import.meta.env.VITE_TIKTOK_URL || "https://www.tiktok.com/@admi.tec",
   // Número en formato internacional sin "+" (51 = Perú) para el enlace wa.me.
   whatsapp: import.meta.env.VITE_WHATSAPP_URL || "https://wa.me/51973228846",
 } as const;

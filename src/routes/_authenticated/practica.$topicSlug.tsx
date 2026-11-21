@@ -261,7 +261,7 @@ function PracticePage() {
             });
       setResult(r);
       setStats((s) => ({ correct: s.correct + (r.isCorrect ? 1 : 0), done: s.done + 1 }));
-      if (cycleTopic && r.completed) {
+      if (cycleTopic && "completed" in r && r.completed) {
         // The current data remains visible on the result screen, but the next
         // visit must ask the server for a new session.
         await queryClient.invalidateQueries({

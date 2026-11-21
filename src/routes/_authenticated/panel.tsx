@@ -247,7 +247,7 @@ function StartPracticeCard({
             </Link>
           </Button>
           <Button asChild variant="outline" className="press">
-            <Link to="/simulacros">
+            <Link to="/examenes/$slug" params={{ slug: universitySlug }} hash="simulacros">
               <Shuffle className="mr-2 h-4 w-4" /> Generar simulacro
             </Link>
           </Button>
