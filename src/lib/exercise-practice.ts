@@ -20,7 +20,10 @@ export const exerciseListSearchSchema = z.object({
 
 export type ExerciseListSearch = z.infer<typeof exerciseListSearchSchema>;
 
-export function exerciseListFilters(topicSlug: string, search: ExerciseListSearch): ExerciseFilters {
+export function exerciseListFilters(
+  topicSlug: string,
+  search: ExerciseListSearch,
+): ExerciseFilters {
   return {
     topicSlug,
     subtopicSlug: search.subtopic === "all" ? undefined : search.subtopic,

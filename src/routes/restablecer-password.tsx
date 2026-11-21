@@ -27,8 +27,7 @@ const linkError = capturedAuthParams?.get("error")
   ? translateHashAuthError(capturedAuthParams)
   : null;
 const isRecoveryLink =
-  capturedAuthHasSession &&
-  isPasswordRecoveryRedirect("/restablecer-password", capturedAuthParams);
+  capturedAuthHasSession && isPasswordRecoveryRedirect("/restablecer-password", capturedAuthParams);
 
 function ResetPasswordPage() {
   const navigate = useNavigate();

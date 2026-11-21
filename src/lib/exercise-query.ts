@@ -12,10 +12,12 @@ export function filteredExercisesQuery(
   const university = filters.universitySlug
     ? "universities!inner(slug,short_name)"
     : "universities(slug,short_name)";
-  let query = client.from("exercises").select(
-    `id, statement_md, statement_image_path, difficulty, exam_year, tags, choices, correct_choice, topic:topics!inner(slug,name), subtopic:${subtopic}, university:${university}`,
-    { count: "exact", head },
-  );
+  let query = client
+    .from("exercises")
+    .select(
+      `id, statement_md, statement_image_path, difficulty, exam_year, tags, choices, correct_choice, topic:topics!inner(slug,name), subtopic:${subtopic}, university:${university}`,
+      { count: "exact", head },
+    );
   // PostgREST filters embedded relations by their aliases.
   if (filters.topicSlug) query = query.eq("topic.slug", filters.topicSlug);
   if (filters.subtopicSlug) query = query.eq("subtopic.slug", filters.subtopicSlug);

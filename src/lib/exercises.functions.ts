@@ -161,7 +161,11 @@ export const listExercisesPage = createServerFn({ method: "GET" })
     const sb = publicClient();
     const from = data.page * data.pageSize;
     const to = from + data.pageSize - 1;
-    const { data: rows, error, count } = await filteredExercisesQuery(sb, data)
+    const {
+      data: rows,
+      error,
+      count,
+    } = await filteredExercisesQuery(sb, data)
       .order("created_at", { ascending: false })
       .order("id")
       .range(from, to);

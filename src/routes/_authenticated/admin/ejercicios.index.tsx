@@ -80,19 +80,20 @@ function AdminExercisesList() {
   const allUniversities = meta.data?.universities ?? [];
 
   const exercises = useMemo(() => q.data?.pages.flatMap((page) => page.items) ?? [], [q.data]);
+  const { hasNextPage, isFetchingNextPage, fetchNextPage } = q;
 
   useEffect(() => {
     const target = loadMoreRef.current;
-    if (!target || !q.hasNextPage || q.isFetchingNextPage) return;
+    if (!target || !hasNextPage || isFetchingNextPage) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) q.fetchNextPage();
+        if (entry.isIntersecting) fetchNextPage();
       },
       { rootMargin: "400px 0px" },
     );
     observer.observe(target);
     return () => observer.disconnect();
-  }, [q.hasNextPage, q.isFetchingNextPage, q.fetchNextPage]);
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   function runSearch() {
     setAppliedFilters({

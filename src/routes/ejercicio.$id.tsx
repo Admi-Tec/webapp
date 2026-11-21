@@ -214,7 +214,11 @@ function ExerciseDetail({ id }: { id: string }) {
               Volver al listado
             </Link>
           )}
-          <p className="text-sm font-medium tabular-nums" role="status" aria-label="Avance de la práctica">
+          <p
+            className="text-sm font-medium tabular-nums"
+            role="status"
+            aria-label="Avance de la práctica"
+          >
             {curIdx + 1} de {practice.length}
           </p>
         </div>
@@ -336,7 +340,14 @@ function ExerciseDetail({ id }: { id: string }) {
         <Button
           variant="outline"
           disabled={!prevId}
-          onClick={() => prevId && navigate({ to: "/ejercicio/$id", params: { id: prevId }, search: practice ? search : {} })}
+          onClick={() =>
+            prevId &&
+            navigate({
+              to: "/ejercicio/$id",
+              params: { id: prevId },
+              search: practice ? search : {},
+            })
+          }
           className="press min-h-11"
         >
           <ArrowLeft className="mr-2 h-4 w-4" /> Anterior
@@ -361,7 +372,14 @@ function ExerciseDetail({ id }: { id: string }) {
         ) : (
           <Button
             disabled={!nextId}
-            onClick={() => nextId && navigate({ to: "/ejercicio/$id", params: { id: nextId }, search: practice ? search : {} })}
+            onClick={() =>
+              nextId &&
+              navigate({
+                to: "/ejercicio/$id",
+                params: { id: nextId },
+                search: practice ? search : {},
+              })
+            }
             className="press min-h-11"
           >
             Siguiente <ArrowRight className="ml-2 h-4 w-4" />
