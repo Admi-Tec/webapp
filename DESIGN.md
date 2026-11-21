@@ -101,6 +101,14 @@ components:
 
 # Design System: Admi-Tec
 
+## Identity and implementation notes (2026-11-08)
+
+- **Admi-Tec** is the current brand; MatePre is a former name. The public name is centralized in `src/lib/site.ts` and rendered by `src/components/site-header.tsx`.
+- Apply the Product Surface system to every admission subject, including mathematics and history, and to admin import/review. A math-only identity would misrepresent the product scope.
+- Verify current rendering in `src/routes/index.tsx`, shared chrome in `src/routes/__root.tsx`, and tokens in `src/styles.css` before changing UI. The YAML tokens above describe both systems; they do not make the landing palette the default.
+- The homepage currently uses a desktop portrait with an ambient glow beside its hero copy. References below to the hero `AnswerSheetWidget` describe the earlier treatment; do not reintroduce it merely to match those references. `AmbientBackground` is currently not mounted.
+- The light shared header/footer and dark homepage landing can appear on the same page. Scope separation means keeping their tokens within their respective components, not requiring a whole viewport to use one palette.
+
 ## 1. Overview
 
 **Creative North Star: "La Hoja de Respuestas" (The Answer Sheet)**
@@ -145,7 +153,7 @@ The homepage hero's palette is a real answer sheet under exam-room light: one de
 
 **The One Pencil Rule.** Amber (`at-primary`) is the only warm, saturated color on the homepage hero. It marks exactly one thing per view — a primary CTA, the one correct answer, the one "you are here" row — never a fill covering a whole section. Teal (`at-success`) handles "correct/positive" so amber stays reserved for emphasis and action.
 
-**The Product Surface Rule.** Everything except the homepage hero's own `.at`-scoped content — header, footer, temas, exámenes, simulacros, auth, and the whole authenticated app — runs the warm, light "notebook" theme instead: `app-paper` (`oklch(0.985 0.008 85)`) background, `app-ink` (`oklch(0.21 0.04 260)`) text, `app-primary` (`oklch(0.34 0.13 265)`, Azul Academia Profundo) as its one authoritative color, and `app-highlighter` (`oklch(0.78 0.165 70)`, amber) as its own sparing accent — with a dark-mode variant at `app-primary-dark` (`oklch(0.78 0.13 260)`). The two systems never mix on the same screen; the `.at` navy/amber system is confined to the homepage's own landing sections, nowhere else.
+**The Product Surface Rule.** Everything except the homepage hero's own `.at`-scoped content — header, footer, temas, exámenes, simulacros, auth, and the whole authenticated app — runs the warm, light "notebook" theme instead: `app-paper` (`oklch(0.985 0.008 85)`) background, `app-ink` (`oklch(0.21 0.04 260)`) text, `app-primary` (`oklch(0.34 0.13 265)`, Azul Academia Profundo) as its one authoritative color, and `app-highlighter` (`oklch(0.78 0.165 70)`, amber) as its own sparing accent — with a dark-mode variant at `app-primary-dark` (`oklch(0.78 0.13 260)`). Keep each system within its component scope: the homepage has light shared chrome around dark landing content; `.at` must not leak into other pages or shared chrome.
 
 ## 3. Typography
 

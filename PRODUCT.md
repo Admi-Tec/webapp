@@ -1,5 +1,15 @@
 # Product
 
+## Identity and implementation references
+
+The current product name is **Admi-Tec** (formerly MatePre). Use Admi-Tec consistently, including when discussing exercise preparation and import. `src/lib/site.ts` holds the public identity used by the application.
+
+Local source reviewed on 2026-11-08 includes course practice, official exams, simulacros, preparation cycles, recommendations, career admission-score references, favorites, goals, rankings, and an administration area with Markdown exercise import and review. This is an implementation map, not evidence of complete content coverage in the deployed catalog.
+
+The product has free/Premium access rules and backend-controlled beta access. Consult `src/lib/plan.ts`, `src/lib/plan-status.ts`, and `src/lib/plan.functions.ts` before making access or pricing claims. The full `/ranking` page requires authentication; the homepage provides a public ranking teaser.
+
+Exercise preparation currently has a repository-local skill (`.agents/skills/exercise-markdown-format/SKILL.md`) and a separate admin import flow (`/admin/importar`). The skill produces Markdown/LaTeX files and accompanying images; the app validates and imports them. This does not imply automatic PDF conversion inside the application.
+
 ## Register
 
 brand
@@ -40,7 +50,7 @@ No specific named anti-references given. Most of the boundary carries over uncha
 - **Exams are real, so they should look real.** Timers, scores, and rankings read as instrument data (tabular figures, exam-sheet precision), not decorative UI — this is what makes "los exámenes son reales" believable at a glance.
 - **Full coverage must be legible, not implied.** With every admission course now in scope, any screen listing subjects, filters, or recommendations must make the breadth obvious — a visitor shouldn't have to dig to learn this isn't just a math tool.
 - **Competitive, not gamified.** The ranking and countdown urgency should feel like real stakes (a genuine exam is coming), never like a game layer bolted onto studying.
-- **The public site sells the moment; the app delivers the work.** The bold navy-and-amber "exam sheet" register belongs to the public/marketing surface. Once a student is inside practicing or mid-exam, the calmer notebook register takes over — don't merge the two.
+- **The homepage sells the moment; the app delivers the work.** The bold navy-and-amber "exam sheet" register belongs only to the homepage's own landing content. Shared header/footer, other public pages, and student/admin pages use the calmer notebook register — keep those scopes separate.
 - **One university, one context.** A student can target multiple universities with different exams and dates; every screen showing content, filters, or recommendations must make it unambiguous which university's context is being shown.
 - **Anonymity is a feature, not an afterthought.** The ranking is opt-in and pseudonymous by design — never leaks real names or identifying data, even while it drives competitive motivation.
 
